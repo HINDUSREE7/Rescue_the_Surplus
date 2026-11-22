@@ -1,0 +1,2570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rescue the Surplus | Real-Time Spoilage-Clock Food Dispatch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+<style>
+  :root {
+    --primary: #059669;
+    --primary-light: #10b981;
+    --primary-dark: #047857;
+    --primary-bg: #ecfdf5;
+    --accent: #2563eb;
+    --accent-light: #3b82f6;
+    --donor-color: #ea580c;
+    --donor-bg: #fff7ed;
+    --receiver-color: #059669;
+    --receiver-bg: #ecfdf5;
+    --volunteer-color: #0284c7;
+    --volunteer-bg: #f0f9ff;
+    --sponsor-color: #7c3aed;
+    --sponsor-bg: #f5f3ff;
+    --urgent: #dc2626;
+    --warning: #d97706;
+    --slate-900: #0f172a;
+    --slate-800: #1e293b;
+    --slate-700: #334155;
+    --slate-600: #475569;
+    --slate-500: #64748b;
+    --slate-400: #94a3b8;
+    --slate-200: #e2e8f0;
+    --slate-100: #f1f5f9;
+    --slate-50: #f8fafc;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    --radius-full: 9999px;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+    --shadow-glow: 0 0 20px rgba(16, 185, 129, 0.2);
+    --transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* THEMATIC ENVIRONMENT & SUSTAINABILITY BACKGROUND */
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: #f5f9f6;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.12) 0px, transparent 55%),
+      radial-gradient(at 100% 0%, rgba(245, 158, 11, 0.10) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.09) 0px, transparent 55%),
+      radial-gradient(at 0% 100%, rgba(2, 132, 199, 0.08) 0px, transparent 50%),
+      radial-gradient(at 50% 50%, rgba(16, 185, 129, 0.04) 0px, transparent 65%);
+    background-attachment: fixed;
+    color: var(--slate-800);
+    line-height: 1.5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Fixed Ambient Background Canvas with Organic Motifs & Animated Glows */
+  .ambient-canvas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .ambient-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.38;
+    animation: orbFloat 24s ease-in-out infinite alternate;
+  }
+
+  .ambient-orb-1 {
+    width: 520px;
+    height: 520px;
+    background: radial-gradient(circle, #34d399 0%, rgba(5, 150, 105, 0.4) 60%, transparent 80%);
+    top: -140px;
+    left: -120px;
+  }
+
+  .ambient-orb-2 {
+    width: 560px;
+    height: 560px;
+    background: radial-gradient(circle, #fcd34d 0%, rgba(245, 158, 11, 0.35) 60%, transparent 80%);
+    top: 35%;
+    right: -160px;
+    animation-delay: -8s;
+    animation-duration: 28s;
+  }
+
+  .ambient-orb-3 {
+    width: 480px;
+    height: 480px;
+    background: radial-gradient(circle, #38bdf8 0%, rgba(2, 132, 199, 0.3) 60%, transparent 80%);
+    bottom: -120px;
+    left: 25%;
+    animation-delay: -16s;
+    animation-duration: 22s;
+  }
+
+  @keyframes orbFloat {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(35px, 25px) scale(1.06); }
+    100% { transform: translate(-25px, -20px) scale(0.96); }
+  }
+
+  /* Logistics & Urban Route Lattice Pattern */
+  .corridor-grid-pattern {
+    position: absolute;
+    inset: 0;
+    background-image: 
+      radial-gradient(circle at 1px 1px, rgba(16, 185, 129, 0.12) 1.2px, transparent 0);
+    background-size: 28px 28px;
+    opacity: 0.65;
+  }
+
+  /* Thematic Food Rescue Watermark Silhouettes */
+  .thematic-watermark {
+    position: absolute;
+    opacity: 0.038;
+    fill: #064e3b;
+    pointer-events: none;
+    user-select: none;
+    transition: opacity 0.5s ease;
+  }
+
+  /* CORRIDOR HERO CONTEXT STRIP */
+  .corridor-hero-strip {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(16, 185, 129, 0.18);
+    padding: 8px 20px;
+    z-index: 10;
+    position: relative;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  }
+
+  .corridor-hero-inner {
+    max-width: 1600px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .corridor-title-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary-dark);
+  }
+
+  .corridor-badge-icon {
+    font-size: 16px;
+  }
+
+  .corridor-pills-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .c-pill {
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(203, 213, 225, 0.8);
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    font-size: 11.5px;
+    color: var(--slate-700);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  }
+
+  .c-pill b {
+    color: var(--slate-900);
+  }
+
+  .c-pill.highlight {
+    background: linear-gradient(135deg, rgba(236, 253, 245, 0.95), rgba(209, 250, 229, 0.95));
+    border-color: rgba(52, 211, 153, 0.6);
+    color: var(--primary-dark);
+    font-weight: 600;
+  }
+
+  /* TOP NAVBAR */
+  header {
+    background: linear-gradient(135deg, #064e3b 0%, #065f46 60%, #047857 100%);
+    color: #fff;
+    padding: 12px 20px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    box-shadow: 0 4px 20px rgba(6, 78, 59, 0.25);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+
+  .brand-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .brand-logo {
+    width: 38px;
+    height: 38px;
+    background: linear-gradient(135deg, #34d399, #059669);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  .brand-text h1 {
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .brand-text p {
+    font-size: 11px;
+    color: #a7f3d0;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  .live-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(16, 185, 129, 0.25);
+    border: 1px solid rgba(52, 211, 153, 0.4);
+    padding: 3px 9px;
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    font-weight: 600;
+    color: #a7f3d0;
+  }
+
+  .pulse-dot {
+    width: 7px;
+    height: 7px;
+    background: #34d399;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #34d399;
+    animation: livePulse 1.8s infinite;
+  }
+
+  @keyframes livePulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7); }
+    70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(52, 211, 153, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+  }
+
+  .nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .control-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    padding: 5px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    backdrop-filter: blur(8px);
+  }
+
+  .control-badge label {
+    font-size: 12px;
+    color: #d1fae5;
+    font-weight: 600;
+  }
+
+  header select {
+    background: #044e3b;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+    transition: var(--transition);
+  }
+
+  header select:focus {
+    border-color: #34d399;
+    box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.3);
+  }
+
+  .btn {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: var(--transition);
+    user-select: none;
+  }
+
+  .btn:hover {
+    transform: translateY(-1px);
+  }
+
+  .btn:active {
+    transform: translateY(0);
+  }
+
+  .btn-white {
+    background: #ffffff;
+    color: #065f46;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  .btn-white:hover {
+    background: #f0fdf4;
+    color: #047857;
+  }
+
+  .btn-scenario {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(217, 119, 6, 0.3);
+  }
+  .btn-scenario:hover {
+    background: linear-gradient(135deg, #fbbf24, #d97706);
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--primary-light), var(--primary));
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  }
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #34d399, var(--primary));
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+  .btn-outline:hover {
+    background: rgba(255,255,255,0.1);
+  }
+
+  #status {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 6px;
+    transition: var(--transition);
+  }
+  #status.muted { color: #a7f3d0; background: rgba(0,0,0,0.15); }
+  #status.bad { color: #fecaca; background: rgba(220, 38, 38, 0.3); border: 1px solid rgba(239, 68, 68, 0.4); }
+
+  /* NAVIGATION TABS */
+  .nav-tabs-bar {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--slate-200);
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    position: relative;
+    z-index: 10;
+  }
+
+  .nav-tab {
+    padding: 12px 18px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--slate-600);
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: var(--transition);
+    white-space: nowrap;
+  }
+
+  .nav-tab:hover {
+    color: var(--primary);
+  }
+
+  .nav-tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+  }
+
+  .nav-tab-badge {
+    background: var(--slate-100);
+    color: var(--slate-600);
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 12px;
+    font-weight: 700;
+  }
+
+  .nav-tab.active .nav-tab-badge {
+    background: var(--primary-bg);
+    color: var(--primary-dark);
+  }
+
+  /* IMPACT BANNER */
+  #impact {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--slate-200);
+    padding: 14px 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    z-index: 10;
+  }
+
+  .impact-metric-card {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: relative;
+    overflow: hidden;
+    transition: var(--transition);
+    backdrop-filter: blur(8px);
+  }
+
+  .impact-metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.12);
+    border-color: var(--primary-light);
+  }
+
+  .impact-metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--primary);
+  }
+
+  .metric-card-meals::before { background: #10b981; }
+  .metric-card-kg::before { background: #3b82f6; }
+  .metric-card-co2::before { background: #8b5cf6; }
+  .metric-card-waste::before { background: #ef4444; }
+  .metric-card-rate::before { background: #f59e0b; }
+
+  .impact-metric-title {
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--slate-500);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .impact-metric-value {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--slate-900);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: -0.03em;
+  }
+
+  .impact-metric-sub {
+    font-size: 11px;
+    color: var(--slate-500);
+    font-weight: 500;
+  }
+
+  /* ASSUMPTIONS DRAWER */
+  #assumptions {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--slate-200);
+    padding: 10px 20px;
+    font-size: 13px;
+    position: relative;
+    z-index: 10;
+  }
+
+  #assumptions summary {
+    font-weight: 600;
+    color: var(--primary-dark);
+    cursor: pointer;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: var(--transition);
+  }
+
+  #assumptions summary:hover {
+    color: var(--primary);
+  }
+
+  #assumptions ul {
+    margin-top: 10px;
+    padding-left: 24px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 8px;
+    color: var(--slate-600);
+  }
+
+  #assumptions li {
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+
+  /* MAIN LAYOUT */
+  main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 460px 1fr;
+    gap: 20px;
+    padding: 20px;
+    max-width: 1600px;
+    width: 100%;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  .column-left {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .column-right {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* CARDS & SECTIONS */
+  section {
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+    transition: var(--transition);
+  }
+
+  section:hover {
+    box-shadow: 0 15px 30px -5px rgba(16, 185, 129, 0.1), 0 10px 12px -5px rgba(0, 0, 0, 0.03);
+    border-color: rgba(52, 211, 153, 0.5);
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--slate-100);
+  }
+
+  .section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--slate-900);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-subtitle {
+    font-size: 12px;
+    color: var(--slate-500);
+    font-weight: 500;
+  }
+
+  /* DONOR INTAKE STYLING */
+  .intake-box {
+    background: var(--slate-50);
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+
+  textarea#text {
+    width: 100%;
+    min-height: 76px;
+    padding: 12px 14px;
+    border: 1.5px solid var(--slate-200);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--slate-800);
+    background: #ffffff;
+    resize: vertical;
+    transition: var(--transition);
+    outline: none;
+  }
+
+  textarea#text:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+  }
+
+  .intake-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+
+  .mic-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .mic-wave {
+    position: absolute;
+    inset: -3px;
+    border-radius: 10px;
+    border: 2px solid var(--primary-light);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .mic-active .mic-wave {
+    animation: micWave 1.4s infinite;
+    opacity: 1;
+  }
+
+  @keyframes micWave {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(1.3); opacity: 0; }
+  }
+
+  .quick-chips-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--slate-400);
+    margin: 10px 0 6px;
+  }
+
+  .quick-chips-group {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  .quick-pill {
+    background: #ffffff;
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-full);
+    padding: 4px 10px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--slate-700);
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .quick-pill:hover {
+    background: var(--primary-bg);
+    border-color: var(--primary);
+    color: var(--primary-dark);
+  }
+
+  /* CHAT BUBBLES */
+  #chat {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 240px;
+    overflow-y: auto;
+    margin: 12px 0;
+    padding: 10px;
+    background: var(--slate-50);
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-md);
+  }
+
+  #chat:empty { display: none; }
+
+  .bubble {
+    max-width: 85%;
+    padding: 9px 14px;
+    border-radius: 14px;
+    font-size: 13.5px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    animation: bubbleIn 0.25s ease-out;
+  }
+
+  @keyframes bubbleIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .bubble.user {
+    align-self: flex-end;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #ffffff;
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2);
+  }
+
+  .bubble.assistant {
+    align-self: flex-start;
+    background: #ffffff;
+    color: var(--slate-800);
+    border: 1px solid var(--slate-200);
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+
+  /* CONFIRM CARD */
+  #confirm {
+    margin-top: 12px;
+  }
+
+  .understood-card {
+    background: linear-gradient(to bottom, #ffffff, #f0fdf4);
+    border: 1.5px solid #86efac;
+    border-radius: var(--radius-md);
+    padding: 16px;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
+    animation: cardPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes cardPop {
+    from { opacity: 0; transform: scale(0.97); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .card-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .card-header-row b {
+    font-size: 14.5px;
+    color: #065f46;
+  }
+
+  .understood-card ul {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .understood-card li {
+    font-size: 13px;
+    color: var(--slate-700);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 8px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 6px;
+  }
+
+  .tag-trust {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--slate-500);
+    background: #e2e8f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .tag-trust.high { background: #dcfce7; color: #166534; }
+  .tag-trust.low { background: #fee2e2; color: #991b1b; }
+
+  .chip {
+    display: inline-block;
+    border: 1px solid var(--primary);
+    border-radius: 16px;
+    padding: 4px 12px;
+    margin: 3px;
+    cursor: pointer;
+    background: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary-dark);
+    transition: var(--transition);
+  }
+
+  .chip:hover {
+    background: var(--primary-bg);
+  }
+
+  .chip.on {
+    background: var(--primary);
+    color: #ffffff;
+  }
+
+  /* FORM FALLBACK */
+  .accordion-form {
+    border-top: 1px solid var(--slate-200);
+    margin-top: 16px;
+    padding-top: 14px;
+  }
+
+  .accordion-form summary {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--slate-700);
+    cursor: pointer;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  #form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  #form select, #form input[type="number"], #form input[type="text"] {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--slate-300);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 13.5px;
+    outline: none;
+    transition: var(--transition);
+  }
+
+  #form select:focus, #form input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+  }
+
+  fieldset {
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    background: var(--slate-50);
+  }
+
+  fieldset legend {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--slate-600);
+    padding: 0 6px;
+  }
+
+  #formAllergens {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  #formAllergens label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+  }
+
+  /* LISTINGS SECTION */
+  #list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .card {
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1.5px solid rgba(226, 232, 240, 0.85);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+    animation: slideInCard 0.3s ease-out;
+  }
+
+  @keyframes slideInCard {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card:hover {
+    background: #ffffff;
+    border-color: rgba(16, 185, 129, 0.45);
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.09);
+  }
+
+  .card-top-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .card-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--slate-900);
+  }
+
+  .status-badge {
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .status-posted { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+  .status-claimed { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+  .status-collected { background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; }
+  .status-delivered { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+  .status-expired { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+  /* STEPPER */
+  .stepper {
+    list-style: none;
+    display: flex;
+    gap: 6px;
+    padding: 0;
+    margin: 12px 0;
+    font-size: 11.5px;
+  }
+
+  .stepper li {
+    flex: 1;
+    text-align: center;
+    border-top: 3px solid var(--slate-200);
+    padding-top: 6px;
+    color: var(--slate-400);
+    font-weight: 600;
+    transition: var(--transition);
+  }
+
+  .stepper li.done {
+    border-top-color: var(--primary);
+    color: var(--primary);
+  }
+
+  .stepper li.current {
+    border-top-color: #f59e0b;
+    color: var(--slate-900);
+    font-weight: 800;
+    position: relative;
+  }
+
+  .stepper li.current::after {
+    content: '';
+    display: block;
+    width: 6px;
+    height: 6px;
+    background: #f59e0b;
+    border-radius: 50%;
+    margin: 3px auto 0;
+    animation: livePulse 1.5s infinite;
+  }
+
+  /* COUNTDOWN BAR */
+  .spoilage-container {
+    background: var(--slate-50);
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    margin: 8px 0;
+  }
+
+  .spoilage-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+
+  .bar {
+    height: 8px;
+    background: var(--slate-200);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .bar > span {
+    display: block;
+    height: 100%;
+    transition: width 0.4s ease;
+  }
+
+  /* MATCHING OFFERS */
+  .offers-group {
+    margin: 10px 0;
+  }
+
+  .offer {
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    margin-top: 6px;
+    background: var(--slate-50);
+    transition: var(--transition);
+  }
+
+  .offer:hover {
+    background: #ffffff;
+    border-color: var(--slate-300);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .offer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+
+  .seg-bar {
+    display: flex;
+    height: 7px;
+    background: var(--slate-200);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 4px 0 2px;
+  }
+
+  .seg-proximity { background: #3b82f6; }
+  .seg-quantity { background: #10b981; }
+  .seg-need { background: #f59e0b; }
+  .seg-fairness { background: #8b5cf6; }
+
+  .seg-legend {
+    display: flex;
+    gap: 10px;
+    font-size: 10.5px;
+    color: var(--slate-500);
+    margin-top: 2px;
+  }
+
+  .seg-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .seg-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  /* OTP DISPLAY */
+  .otp-box {
+    background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+    border: 1.5px dashed var(--primary);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .otp-code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    color: var(--primary-dark);
+  }
+
+  .action-buttons-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin: 10px 0;
+    flex-wrap: wrap;
+  }
+
+  .otp-input-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .otp-input-group input {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-align: center;
+    width: 110px;
+    padding: 6px 8px;
+    border: 1.5px solid var(--slate-300);
+    border-radius: 6px;
+  }
+
+  /* MAP CONTAINER */
+  #map {
+    height: 380px;
+    width: 100%;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--slate-200);
+    box-shadow: var(--shadow-sm);
+    z-index: 1;
+  }
+
+  .leaflet-popup-content-wrapper {
+    border-radius: 10px;
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* EVENT TIMELINE */
+  ol.timeline {
+    list-style: none;
+    max-height: 240px;
+    overflow-y: auto;
+    padding-left: 8px;
+  }
+
+  ol.timeline li {
+    position: relative;
+    padding-left: 18px;
+    margin-bottom: 8px;
+    font-size: 12.5px;
+    color: var(--slate-600);
+    line-height: 1.4;
+  }
+
+  ol.timeline li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 5px;
+    width: 8px;
+    height: 8px;
+    background: var(--primary);
+    border-radius: 50%;
+  }
+
+  /* BUSINESS CASE & SPONSOR TAB */
+  .business-case-view {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  .pillar-card {
+    background: #ffffff;
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-md);
+    padding: 18px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .pillar-card h4 {
+    font-size: 15px;
+    color: var(--slate-900);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pillar-card p {
+    font-size: 13px;
+    color: var(--slate-600);
+    line-height: 1.5;
+  }
+
+  .pillar-card .highlight {
+    background: var(--primary-bg);
+    color: var(--primary-dark);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 12.5px;
+  }
+
+  .simulator-box {
+    background: linear-gradient(135deg, #064e3b 0%, #047857 100%);
+    color: #ffffff;
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .simulator-box h3 {
+    font-size: 18px;
+    margin-bottom: 4px;
+  }
+
+  .simulator-box p {
+    font-size: 13px;
+    color: #a7f3d0;
+    margin-bottom: 16px;
+  }
+
+  .slider-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+
+  .slider-group label {
+    font-size: 12.5px;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 6px;
+    color: #d1fae5;
+  }
+
+  .slider-group input[type="range"] {
+    width: 100%;
+    accent-color: #34d399;
+  }
+
+  .sim-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .sim-metric h5 {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #a7f3d0;
+    margin-bottom: 4px;
+  }
+
+  .sim-metric b {
+    font-size: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    color: #ffffff;
+  }
+
+  /* SPONSOR PANEL */
+  #sponsorPanel {
+    background: #ffffff;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--slate-200);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* SAFETY GUARDRAIL HUB */
+  .guardrail-hub {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .guardrail-callout {
+    background: #eff6ff;
+    border-left: 4px solid #3b82f6;
+    padding: 14px 18px;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    font-size: 13.5px;
+    color: #1e40af;
+  }
+
+  .safety-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+  }
+
+  .safety-card {
+    background: #ffffff;
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+  }
+
+  .safety-card h5 {
+    font-size: 14px;
+    margin-bottom: 6px;
+    color: var(--slate-900);
+  }
+
+  .safety-card p {
+    font-size: 12.5px;
+    color: var(--slate-600);
+  }
+
+  /* UTILITIES */
+  .muted { color: var(--slate-500); font-size: 12.5px; }
+  .bad { color: var(--urgent); font-weight: 600; }
+  .badge { color: #fff; border-radius: 10px; padding: 1px 8px; font-size: 11px; font-weight: 700; }
+
+  /* RESPONSIVE */
+  @media (max-width: 1024px) {
+    main { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 640px) {
+    header { padding: 10px 14px; }
+    .nav-controls { width: 100%; justify-content: space-between; }
+    .impact-metric-card { min-width: 140px; }
+    .slider-controls { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- THEMATIC BACKGROUND UI: AMBIENT CANVAS, GLOW ORBS & SUSTAINABILITY WATERMARKS -->
+<div class="ambient-canvas">
+  <div class="ambient-orb ambient-orb-1"></div>
+  <div class="ambient-orb ambient-orb-2"></div>
+  <div class="ambient-orb ambient-orb-3"></div>
+  <div class="corridor-grid-pattern"></div>
+  
+  <!-- Subtle SVG Thematic Watermarks: Wheat stalk, Fresh Leaf, Warm Food Bowl, Transit Route -->
+  <svg class="thematic-watermark" viewBox="0 0 100 100" style="top:7%;left:3%;width:180px;height:180px;">
+    <!-- Wheat Stalk Motif -->
+    <path d="M50 95 L50 15 M50 25 C40 20 35 30 50 35 C65 30 60 20 50 25 M50 45 C38 40 32 52 50 58 C68 52 62 40 50 45 M50 68 C38 62 32 75 50 80 C68 75 62 62 50 68" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  </svg>
+  <svg class="thematic-watermark" viewBox="0 0 100 100" style="top:42%;right:2%;width:220px;height:220px;">
+    <!-- Sprout / Leaf of Life -->
+    <path d="M50 85 C50 60 40 40 20 35 C20 60 35 75 50 85 Z M50 85 C50 55 65 30 85 25 C85 55 70 75 50 85 Z" fill="currentColor"/>
+  </svg>
+  <svg class="thematic-watermark" viewBox="0 0 100 100" style="bottom:10%;left:5%;width:200px;height:200px;">
+    <!-- Community Hot Meal Bowl & Rising Warm Steam -->
+    <path d="M20 50 C20 75 80 75 80 50 Z M15 50 L85 50" stroke="currentColor" stroke-width="3" fill="none"/>
+    <path d="M35 42 C30 35 40 28 35 20 M50 42 C45 33 55 26 50 16 M65 42 C60 35 70 28 65 20" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  </svg>
+  <svg class="thematic-watermark" viewBox="0 0 100 100" style="top:25%;left:48%;width:240px;height:240px;">
+    <!-- Eco Logistics Route & Circular Loop -->
+    <circle cx="50" cy="50" r="38" stroke="currentColor" stroke-width="2" stroke-dasharray="6,6" fill="none"/>
+    <circle cx="50" cy="12" r="5" fill="currentColor"/>
+    <circle cx="88" cy="50" r="5" fill="currentColor"/>
+    <circle cx="50" cy="88" r="5" fill="currentColor"/>
+    <circle cx="12" cy="50" r="5" fill="currentColor"/>
+  </svg>
+</div>
+
+<!-- TOP HEADER -->
+<header>
+  <div class="brand-group">
+    <div class="brand-logo">🍲</div>
+    <div class="brand-text">
+      <h1>Rescue the Surplus <span class="live-pill"><span class="pulse-dot"></span> Live Corridor</span></h1>
+      <p>Spoilage-Clock Dispatch Engine</p>
+    </div>
+  </div>
+
+  <div class="nav-controls">
+    <div class="control-badge">
+      <label for="role">Role:</label>
+      <select id="role">
+        <option value="1">Donor: Wedding Caterer A</option>
+        <option value="2">Donor: Function Hall B</option>
+        <option value="5">Receiver: Community Kitchen E</option>
+        <option value="6">Receiver: Shelter F</option>
+        <option value="11">Volunteer: K</option>
+        <option value="15">Sponsor: City CSR</option>
+      </select>
+    </div>
+
+    <div class="control-badge">
+      <label for="speed">Clock:</label>
+      <select id="speed">
+        <option value="1">1x (Real-time)</option>
+        <option value="60">60x (1m = 1s)</option>
+        <option value="120">120x (Fast)</option>
+        <option value="300">300x (Hyper)</option>
+      </select>
+    </div>
+
+    <button id="reset" class="btn btn-outline" title="Reset all demo data to initial state">🔄 Reset</button>
+    <button id="scenario" class="btn btn-scenario" title="Run PRD 120x wedding pitch scenario">▶️ Pitch Scenario</button>
+    <span id="status" class="muted">Ready</span>
+    <span id="speechNote" hidden style="background:#fff;color:#b00020;border-radius:4px;padding:2px 6px;font-size:12px">Voice input not supported in this browser; type instead.</span>
+  </div>
+</header>
+
+<!-- CORRIDOR CONTEXT HERO STRIP -->
+<div class="corridor-hero-strip">
+  <div class="corridor-hero-inner">
+    <div class="corridor-title-badge">
+      <span class="corridor-badge-icon">🌿</span>
+      <span><b>Guntur–Vijayawada Smart Food Corridor</b> · Rescue the Surplus Network</span>
+    </div>
+    <div class="corridor-pills-row">
+      <span class="c-pill" id="focusDonorPill">📍 Focus Donor: <b>Wedding Caterer A</b></span>
+      <span class="c-pill">🍲 Beneficiaries: <b>6 Nearby Community Kitchens &amp; Shelters</b></span>
+      <span class="c-pill">⏱️ Dispatch Clock: <b>Tiered Radius Escalation (3–25 km)</b></span>
+      <span class="c-pill highlight">🌍 Methane Prevention: <b>2.5 kg CO₂e / kg Food Diverted</b></span>
+    </div>
+  </div>
+</div>
+
+<!-- NAVIGATION TABS BAR -->
+<div class="nav-tabs-bar">
+  <button class="nav-tab active" data-tab="tab-operations">
+    <span>⚡ Live Dispatch Hub</span>
+    <span class="nav-tab-badge" id="tabBadgeListings">0</span>
+  </button>
+  <button class="nav-tab" data-tab="tab-business">
+    <span>💼 Business Case &amp; Sponsor ROI</span>
+  </button>
+  <button class="nav-tab" data-tab="tab-safety">
+    <span>🛡️ Food Safety &amp; Guardrails</span>
+  </button>
+  <button class="nav-tab" data-tab="tab-science">
+    <span>🔬 Carbon &amp; Impact Science</span>
+  </button>
+</div>
+
+<!-- TOP IMPACT METRICS STRIP -->
+<div id="impact">
+  <!-- Populated by renderImpact() with rich cards -->
+</div>
+
+<!-- TRANSPARENT ASSUMPTIONS DRAWER -->
+<details id="assumptions">
+  <summary>🔬 Transparent Assumptions Behind Every Number (FSSAI, FAO, WRAP Index)</summary>
+  <ul id="assumptionList"></ul>
+</details>
+
+<!-- TAB 1: OPERATIONS / DISPATCH HUB (DEFAULT) -->
+<main id="tab-operations-view">
+  <!-- LEFT COLUMN: INTAKE & FORM -->
+  <div class="column-left">
+    <!-- DONOR INTAKE SECTION -->
+    <section id="donor">
+      <div class="section-header">
+        <div>
+          <h3 class="section-title">⚡ 30-Second Donor Intake</h3>
+          <p class="section-subtitle">Say it or type it in Telugu or English. AI drafts, engine validates.</p>
+        </div>
+        <span id="extractorBadge" class="tag-trust" hidden></span>
+      </div>
+
+      <div class="intake-box">
+        <textarea id="text" placeholder="e.g. 60 kilo biryani migilindi, 11:30 lopu teesukellandi (or 200 plates veg biryani)"></textarea>
+        
+        <div class="quick-chips-label">Quick Pitch Presets:</div>
+        <div class="quick-chips-group">
+          <span class="quick-pill" id="pitchChat" title="PRD Step 2: 200 plates veg biryani (60 kg)">🍛 200 Plates Biryani (60 kg, 90m)</span>
+          <span class="quick-pill" onclick="fillPrompt('40 kg tomato dal & rice, ready now, pickup in 60 min, nuts dairy none')">🍲 40 kg Dal &amp; Rice (60m)</span>
+          <span class="quick-pill" onclick="fillPrompt('15 kg laddu sweets, 45 min lo, milk undi')">🧁 15 kg Sweets (Dairy, 45m)</span>
+        </div>
+
+        <div class="intake-actions">
+          <button id="send" class="btn btn-primary">🧠 Understand</button>
+          
+          <div class="mic-container" id="micWrap">
+            <span class="mic-wave"></span>
+            <button id="mic" class="btn btn-outline" style="color:var(--slate-700);border-color:var(--slate-300)" title="Web Speech API: Chrome/Edge, HTTPS or localhost">
+              🎙️ Speak (Mic)
+            </button>
+          </div>
+
+          <select id="lang" style="padding:6px 10px;border-radius:8px;border:1px solid var(--slate-300);font-size:12px;font-family:inherit;">
+            <option value="te-IN">Telugu (te-IN)</option>
+            <option value="en-IN">English (en-IN)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- INTERACTIVE CHAT BUBBLES -->
+      <div id="chat"></div>
+
+      <!-- AI UNDERSTOOD / CONFIRM CARD -->
+      <div id="confirm"></div>
+
+      <!-- ACCORDION FORM FALLBACK -->
+      <details class="accordion-form">
+        <summary>📝 Form Fallback (Manual Entry)</summary>
+        <form id="form">
+          <div class="form-row">
+            <div>
+              <label class="muted" style="font-weight:600;display:block;margin-bottom:4px">Category</label>
+              <select name="category">
+                <option value="cooked_rice">Cooked rice</option>
+                <option value="curry_dal">Curry / dal</option>
+                <option value="sweets_dairy">Sweets / dairy</option>
+                <option value="bakery">Bakery</option>
+                <option value="produce">Produce</option>
+                <option value="packaged">Packaged</option>
+              </select>
+            </div>
+            <div>
+              <label class="muted" style="font-weight:600;display:block;margin-bottom:4px">Surplus (kg)</label>
+              <input name="kg" type="number" min="1" max="500" step="0.5" value="20">
+            </div>
+          </div>
+
+          <div>
+            <label class="muted" style="font-weight:600;display:block;margin-bottom:4px">Pickup window (minutes)</label>
+            <input name="pickupInMin" type="number" min="1" value="90">
+          </div>
+
+          <fieldset>
+            <legend>Allergens (choose one or more, or None declared)</legend>
+            <div id="formAllergens" class="muted">Loading allergens...</div>
+          </fieldset>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+            <button type="button" id="repeatLast" class="btn btn-outline" style="color:var(--slate-700);border-color:var(--slate-300)">↺ Repeat Last Prefill</button>
+            <button type="button" id="repeatPost" class="btn btn-outline" style="color:var(--slate-700);border-color:var(--slate-300)" title="Posts the values of your last submitted listing again" disabled>⚡ Repost Last</button>
+            <button id="formPost" class="btn btn-primary" disabled>Publish Listing</button>
+          </div>
+        </form>
+      </details>
+
+      <p class="muted" style="margin-top:12px;font-size:11.5px">
+        🔒 <b>Guardrail:</b> Platform connects donors and receivers; does not certify food safety. Allergens are as explicitly declared by the donor.
+      </p>
+    </section>
+
+    <!-- EVENT AUDIT TIMELINE -->
+    <section>
+      <div class="section-header">
+        <div>
+          <h3 class="section-title">⏱️ Live Audit Trail</h3>
+          <p class="section-subtitle">Real-time tamper-evident chronological event log</p>
+        </div>
+      </div>
+      <ol class="timeline" id="timeline"></ol>
+    </section>
+  </div>
+
+  <!-- RIGHT COLUMN: LIVE LISTINGS & MAP -->
+  <div class="column-right">
+    <!-- SPONSOR ONLY PANEL (SHOWN FOR SPONSOR ROLE) -->
+    <div id="sponsorPanel" hidden>
+      <h3 class="section-title" style="color:var(--sponsor-color)">🏢 Corporate CSR &amp; Sponsor Portal</h3>
+      <p class="muted" style="margin-bottom:14px">Real-time verified community meal counter and carbon abatement dashboard.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:14px;margin-bottom:16px;">
+        <div class="impact-metric-card metric-card-meals">
+          <span class="impact-metric-title">Verified Meals Delivered</span>
+          <b class="impact-metric-value" id="sponsorMeals">—</b>
+          <span class="impact-metric-sub">OTP-authenticated delivery</span>
+        </div>
+        <div class="impact-metric-card metric-card-kg">
+          <span class="impact-metric-title">Food Rescued (kg)</span>
+          <b class="impact-metric-value" id="sponsorDelivered">—</b>
+          <span class="impact-metric-sub">Clean surplus diverted</span>
+        </div>
+        <div class="impact-metric-card metric-card-rate">
+          <span class="impact-metric-title">Corridor Rescue Rate</span>
+          <b class="impact-metric-value" id="sponsorRate">—</b>
+          <span class="impact-metric-sub">Zero-waste efficiency</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIVE LISTINGS FEED -->
+    <section id="listings">
+      <div class="section-header">
+        <div>
+          <h3 class="section-title">📡 Active Surplus Listings</h3>
+          <p class="section-subtitle">Spoilage clock matching with explainable multi-tier offer scoring</p>
+        </div>
+      </div>
+      <div id="list"></div>
+    </section>
+
+    <!-- LIVE GEOGRAPHIC RADAR MAP -->
+    <section>
+      <div class="section-header">
+        <div>
+          <h3 class="section-title">🗺️ Geo-Radar Logistics Map</h3>
+          <p class="section-subtitle">Guntur–Vijayawada corridor · Donors, community kitchens &amp; active courier routes</p>
+        </div>
+      </div>
+      <div id="map"></div>
+    </section>
+
+    <div id="impactOld" class="muted" hidden></div>
+  </div>
+</main>
+
+<!-- TAB 2: BUSINESS CASE & SPONSOR ROI -->
+<div id="tab-business-view" class="business-case-view" style="display:none;padding:24px;max-width:1400px;margin:0 auto;width:100%;">
+  <div class="section-header">
+    <div>
+      <h2 style="font-size:22px;font-weight:800;color:var(--slate-900)">💼 Business Case &amp; Sustainable Monetization</h2>
+      <p style="color:var(--slate-600);font-size:14px">How Rescue the Surplus aligns economic incentives for donors, sponsors, and city bodies.</p>
+    </div>
+  </div>
+
+  <!-- 3 PILLARS DIRECTLY ANSWERING THE PROMPT QUESTIONS -->
+  <div class="grid-3">
+    <!-- PILLAR 1: FOR THE BUSY CATERER -->
+    <div class="pillar-card">
+      <div style="font-size:28px">👨‍🍳</div>
+      <h4>What a Busy Caterer Gets</h4>
+      <p><b>Question:</b> <i>What does a busy caterer get out of this, and why would they use it every week?</i></p>
+      <ul style="font-size:13px;color:var(--slate-700);padding-left:18px;display:flex;flex-direction:column;gap:6px">
+        <li><b>Under-60s Zero-Hassle Dispatch:</b> Caterers are exhausted at 11:30 PM. They speak once; our platform handles the rest. No phone calls or chasing volunteers.</li>
+        <li><b>Direct Disposal Cost Savings:</b> Commercial waste hauling in Andhra banquets costs ₹1,500–₹4,000 per event. Rescuing surplus eliminates commercial bin fees.</li>
+        <li><b>Zero-Food-Waste Brand Certification:</b> Venues and caterers receive green badges and ESG verification for corporate &amp; high-value clients.</li>
+        <li><b>FSSAI Good Samaritan Protection:</b> Clear audit trail ensuring no post-handoff liability.</li>
+      </ul>
+      <div class="highlight">Average Caterer Savings: ₹18,000 / month in disposal &amp; labor costs.</div>
+    </div>
+
+    <!-- PILLAR 2: WHO PAYS (SPONSORS & CITY) -->
+    <div class="pillar-card">
+      <div style="font-size:28px">🏢</div>
+      <h4>Who Pays: The CSR &amp; City Model</h4>
+      <p><b>Question:</b> <i>Who pays: donors for savings, CSR sponsors or city authorities?</i></p>
+      <ul style="font-size:13px;color:var(--slate-700);padding-left:18px;display:flex;flex-direction:column;gap:6px">
+        <li><b>CSR Sponsors Pay (₹4 / Verified Meal):</b> Cooking a hot meal costs ₹30–₹40. Rescuing high-quality caterer food costs only ₹4 logistics fee — an <b>8.75x ROI</b> on CSR budgets under Schedule VII (Hunger &amp; Malnutrition).</li>
+        <li><b>Municipal Solid Waste (ULB) Subsidies:</b> Urban local bodies pay tipping fees of ₹1,200/tonne for landfill disposal. Diverting organic waste saves city landfill capacity and methane emissions.</li>
+        <li><b>Enterprise SaaS Subscription:</b> Large hotel chains and convention halls pay for automated ESG Scope 3 reporting and annual carbon offset compliance certificates.</li>
+      </ul>
+      <div class="highlight">8.75x Social ROI compared to traditional community kitchen cooking.</div>
+    </div>
+
+    <!-- PILLAR 3: SPOILAGE PREVENTION ARCHITECTURE -->
+    <div class="pillar-card">
+      <div style="font-size:28px">⏱️</div>
+      <h4>Spoilage Clock Architecture</h4>
+      <p><b>Question:</b> <i>How do you make sure food is collected before it spoils?</i></p>
+      <ul style="font-size:13px;color:var(--slate-700);padding-left:18px;display:flex;flex-direction:column;gap:6px">
+        <li><b>Automated 4-Tier Radius Escalation:</b> Starts within 3 km. As the spoilage clock ticks, the search radius widens to 6 km, 12 km, and 25 km automatically.</li>
+        <li><b>Dynamic Urgency Reweighting:</b> As remaining safe window shrinks, proximity weight jumps from 30% to 50% in the matching algorithm.</li>
+        <li><b>No-Show Recovery Engine:</b> If a claimed listing isn't picked up by the deadline, it is immediately reopened and offered to reserve couriers with penalty tracking.</li>
+        <li><b>Hard Time Clamps:</b> Pickup window is automatically clamped to Safe Window minus 30 minutes handling buffer.</li>
+      </ul>
+      <div class="highlight">Safe Window Clamped: Always 30 min buffer before spoilage limit.</div>
+    </div>
+  </div>
+
+  <!-- INTERACTIVE CSR & CATERER ROI SIMULATOR -->
+  <div class="simulator-box">
+    <h3>📈 Interactive CSR Impact &amp; Economics Simulator</h3>
+    <p>Simulate the monthly social and financial value created by surplus food recovery in your city corridor.</p>
+
+    <div class="slider-controls">
+      <div class="slider-group">
+        <label for="simEvents">Events / Banquets per Month: <span id="simEventsVal" style="font-weight:800;color:#fff">40</span></label>
+        <input type="range" id="simEvents" min="5" max="200" step="5" value="40" oninput="updateSim()">
+      </div>
+      <div class="slider-group">
+        <label for="simKg">Avg Surplus Food per Event (kg): <span id="simKgVal" style="font-weight:800;color:#fff">50</span> kg</label>
+        <input type="range" id="simKg" min="10" max="250" step="10" value="50" oninput="updateSim()">
+      </div>
+    </div>
+
+    <div class="sim-results">
+      <div class="sim-metric">
+        <h5>Monthly Rescued</h5>
+        <b id="simRescuedKg">2,000 kg</b>
+      </div>
+      <div class="sim-metric">
+        <h5>Meals Provided</h5>
+        <b id="simMeals">5,000</b>
+      </div>
+      <div class="sim-metric">
+        <h5>Food Value Rescued</h5>
+        <b id="simFoodVal">₹1,75,000</b>
+      </div>
+      <div class="sim-metric">
+        <h5>Disposal Fee Saved</h5>
+        <b id="simDisposalSaved">₹48,000</b>
+      </div>
+      <div class="sim-metric">
+        <h5>CO₂e Diverted</h5>
+        <b id="simCO2">5,000 kg</b>
+      </div>
+      <div class="sim-metric">
+        <h5>CSR Logistics Cost (@ ₹4)</h5>
+        <b id="simCsrCost">₹20,000</b>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 3: FOOD SAFETY & GUARDRAILS -->
+<div id="tab-safety-view" class="guardrail-hub" style="display:none;padding:24px;max-width:1400px;margin:0 auto;width:100%;">
+  <div class="section-header">
+    <div>
+      <h2 style="font-size:22px;font-weight:800;color:var(--slate-900)">🛡️ Food Safety &amp; Guardrails Protocol</h2>
+      <p style="color:var(--slate-600);font-size:14px">Rigorous safety boundaries, FSSAI temperature guidelines, and legal disclaimer compliance.</p>
+    </div>
+  </div>
+
+  <div class="guardrail-callout">
+    <b>Platform Disclaimer &amp; Good Samaritan Protection:</b> The platform coordinates real-time logistics and does <b>not</b> certify food safety or endorse biological suitability. Allergens are as explicitly declared by the donor. Donations comply with standard surplus donation practices and do not constitute tax or legal advice.
+  </div>
+
+  <div class="safety-grid">
+    <div class="safety-card">
+      <h5>🍚 Cooked Rice &amp; Biryani</h5>
+      <p><b>Safe Window:</b> 4 hours maximum.<br>
+      <b>Storage:</b> Maintain hot-holding at or above 60°C or chill rapidly below 5°C.<br>
+      <b>Pathogen Risk:</b> <i>Bacillus cereus</i> spore germination in ambient starch.</p>
+    </div>
+    <div class="safety-card">
+      <h5>🍲 Curries, Dals &amp; Gravies</h5>
+      <p><b>Safe Window:</b> 4 hours maximum.<br>
+      <b>Storage:</b> Keep covered, heat-retained, avoid re-dipping utensils.<br>
+      <b>Pathogen Risk:</b> Rapid bacterial growth in high-moisture protein broths.</p>
+    </div>
+    <div class="safety-card">
+      <h5>🧁 Sweets &amp; Dairy (Mithai)</h5>
+      <p><b>Safe Window:</b> 6 hours maximum.<br>
+      <b>Storage:</b> Strict refrigeration (≤4°C); dairy products spoil fastest in ambient humidity.<br>
+      <b>Pathogen Risk:</b> Lactic acid fermentation and souring.</p>
+    </div>
+    <div class="safety-card">
+      <h5>🥖 Bakery &amp; Bread</h5>
+      <p><b>Safe Window:</b> 24 hours.<br>
+      <b>Storage:</b> Dry, pest-proof ventilated packaging.<br>
+      <b>Pathogen Risk:</b> Mold proliferation if moisture is trapped.</p>
+    </div>
+    <div class="safety-card">
+      <h5>🥗 Fresh Produce (Fruits/Veg)</h5>
+      <p><b>Safe Window:</b> 48 hours.<br>
+      <b>Storage:</b> Cool, ventilated crates away from direct sunlight.<br>
+      <b>Pathogen Risk:</b> Bruising and enzymatic decay.</p>
+    </div>
+    <div class="safety-card">
+      <h5>📦 Packaged Foods</h5>
+      <p><b>Safe Window:</b> 72 hours (subject to pack expiration).<br>
+      <b>Storage:</b> Sealed, intact manufacturer packaging.<br>
+      <b>Pathogen Risk:</b> Packaging rupture or moisture breach.</p>
+    </div>
+  </div>
+
+  <div style="background:#fff;border:1px solid var(--slate-200);border-radius:var(--radius-md);padding:18px;">
+    <h4 style="font-size:15px;margin-bottom:8px">⚠️ Allergen &amp; Cross-Contamination Standard</h4>
+    <p style="font-size:13px;color:var(--slate-600);line-height:1.6">
+      Silence is never interpreted as "no allergens". The AI intake engine rejects ambiguous allergen inputs and forces an explicit confirmation chip ("Nuts", "Dairy", "Gluten", "Egg", or "None declared"). Community kitchens and recipient shelters are shown these declarations before accepting any offer.
+    </p>
+  </div>
+</div>
+
+<!-- TAB 4: CARBON & IMPACT SCIENCE -->
+<div id="tab-science-view" style="display:none;padding:24px;max-width:1400px;margin:0 auto;width:100%;">
+  <div class="section-header">
+    <div>
+      <h2 style="font-size:22px;font-weight:800;color:var(--slate-900)">🔬 Carbon Abatement &amp; Impact Science</h2>
+      <p style="color:var(--slate-600);font-size:14px">Peer-reviewed conversion factors from the UN Food and Agriculture Organization (FAO) and WRAP UK.</p>
+    </div>
+  </div>
+
+  <div class="grid-3">
+    <div class="pillar-card">
+      <h4>🍲 Meal Equivalence Formula</h4>
+      <p>We provide a transparent three-point estimate for meal conversions based on FSSAI dietary standards:</p>
+      <ul style="font-size:13px;color:var(--slate-700);padding-left:18px">
+        <li><b>Conservative (Low):</b> 0.50 kg per meal (heavy banquet meal)</li>
+        <li><b>Standard (Mid):</b> 0.40 kg per meal (standard balanced meal)</li>
+        <li><b>Optimistic (High):</b> 0.30 kg per meal (light meal / snack)</li>
+      </ul>
+      <p class="muted">Formula: $Meals = \frac{\text{Delivered kg}}{\text{Factor}}$</p>
+    </div>
+
+    <div class="pillar-card">
+      <h4>🌿 Landfill Methane &amp; CO₂e Index</h4>
+      <p>When food decomposes anaerobically in open municipal dump yards, it generates methane ($CH_4$), which has 28x the global warming potential of $CO_2$ over a 100-year cycle:</p>
+      <ul style="font-size:13px;color:var(--slate-700);padding-left:18px">
+        <li><b>Low Range:</b> 1.9 kg CO₂e / kg food waste</li>
+        <li><b>Central Estimate:</b> 2.5 kg CO₂e / kg food waste (FAO Food Wastage Footprint)</li>
+        <li><b>High Range:</b> 3.3 kg CO₂e / kg food waste</li>
+      </ul>
+      <p class="muted">Only OTP-confirmed deliveries are logged as averted emissions.</p>
+    </div>
+
+    <div class="pillar-card">
+      <h4>💧 Embedded Virtual Water Savings</h4>
+      <p>Agricultural water required to cultivate rice, wheat, vegetables, and dairy is preserved when food is eaten rather than discarded:</p>
+      <ul style="font-size:13px;color:var(--slate-700);padding-left:18px">
+        <li>1 kg Cooked Rice ~ 1,400 Litres embedded water</li>
+        <li>1 kg Vegetables / Dal ~ 600 Litres embedded water</li>
+        <li>Average surplus mix ~ 1,000 Litres saved per kg rescued</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+let draft = null;
+let meta = null;
+let chat = [];          // intake conversation, client-side only: {role: "user" | "assistant", text}
+let lastPosted = "";    // clamp message from the last confirmed listing, shown on the card
+let lastSubmitted = null; // last listing values posted from the form, for Repeat-posted
+
+// Leaflet map setup with smooth view
+const map = L.map("map").setView([16.30, 80.45], 10);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 18,
+  attribution: "© OpenStreetMap contributors · Rescue the Surplus"
+}).addTo(map);
+
+const markers = L.layerGroup().addTo(map);
+const lines = L.layerGroup().addTo(map);
+
+const ROLE_COLOR = {donor: "#ea580c", receiver: "#059669", volunteer: "#0284c7", sponsor: "#7c3aed"};
+const ROLE_LABEL = {donor: "Donor", receiver: "NGO / Receiver", volunteer: "Volunteer", sponsor: "Sponsor"};
+const ACTIVE = ["claimed", "collected"];
+let fitPending = true;
+
+// Custom Leaflet Legend
+const legend = L.control({position: "bottomright"});
+legend.onAdd = () => {
+  const d = L.DomUtil.create("div", "legend");
+  d.style.background = "rgba(255,255,255,0.95)";
+  d.style.padding = "8px 12px";
+  d.style.borderRadius = "8px";
+  d.style.boxShadow = "0 2px 6px rgba(0,0,0,0.15)";
+  d.style.fontSize = "11.5px";
+  d.style.fontWeight = "600";
+  d.style.lineHeight = "1.7";
+  d.innerHTML = Object.keys(ROLE_LABEL).map((r) => 
+    `<div><span style="display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;background:${ROLE_COLOR[r]};box-shadow:0 0 4px ${ROLE_COLOR[r]}"></span>${ROLE_LABEL[r]}</div>`
+  ).join("") + `<div class="muted" style="margin-top:2px;font-size:10px">--- Active Courier Route</div>`;
+  return d;
+};
+legend.addTo(map);
+
+function org() { return $("role").value; }
+function setStatus(msg, bad) {
+  $("status").textContent = msg;
+  $("status").className = bad ? "bad" : "muted";
+}
+
+async function api(method, path, body) {
+  const opts = {method, headers: {"X-Org": org()}};
+  if (body !== undefined) {
+    opts.headers["Content-Type"] = "application/json";
+    opts.body = JSON.stringify(body);
+  }
+  const r = await fetch(path, opts);
+  let data = {};
+  try { data = await r.json(); } catch (e) { data = {error: "bad response"}; }
+  if (!r.ok) throw new Error(data.error || ("HTTP " + r.status));
+  return data;
+}
+
+function clockText(iso) {
+  return iso ? new Date(iso).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}) : "-";
+}
+
+function fillPrompt(txt) {
+  $("text").value = txt;
+  $("text").focus();
+}
+
+// UNDERSTOOD / CONFIRM CARD
+function renderConfirm() {
+  const el = $("confirm");
+  if (!draft) {
+    el.innerHTML = lastPosted ? `<div class="understood-card"><b>Posted Successfully</b><p class="muted" style="margin-top:4px">${esc(lastPosted)}</p></div>` : "";
+    $("extractorBadge").hidden = true;
+    return;
+  }
+  const isLlm = String(draft.extractor || "").toLowerCase() === "llm";
+  $("extractorBadge").textContent = "Extractor: " + (isLlm ? "LLM Model" : "Rule Engine");
+  $("extractorBadge").className = "tag-trust " + (isLlm ? "high" : "");
+  $("extractorBadge").hidden = false;
+
+  const p = draft.parsed || {};
+  const conf = draft.confidence || {};
+  const row = (label, key, val) => `<li><span>${esc(label)}: <b>${esc(val ?? "missing")}</b></span> <span class="tag-trust ${conf[key] === 'high' ? 'high' : conf[key] === 'low' ? 'low' : ''}">[${esc(conf[key] || "missing")}, ${esc((draft.field_sources||{})[key] || "-")}]</span></li>`;
+
+  let html = `<div class="understood-card">
+    <div class="card-header-row">
+      <b>🧠 AI Extraction Breakdown</b>
+      <span class="muted" style="font-size:11px">AI drafts · Engine enforces</span>
+    </div>
+    <ul>`;
+  html += row("Category", "category", p.category);
+  html += row("Quantity (kg)", "kg", p.kg);
+  html += row("Pickup by", "ready_by", p.ready_by ? clockText(p.ready_by) : null);
+  html += row("Allergens", "allergens", (p.allergens || []).join(", ") || null);
+  html += `</ul>`;
+
+  if (p.conversion) html += `<p class="muted" style="margin-bottom:6px">⚖️ ${esc(p.conversion)}</p>`;
+  if (draft.clamp_message) html += `<p class="muted" style="margin-bottom:6px">⏱️ ${esc(draft.clamp_message)}</p>`;
+  if (Object.values(conf).includes("low")) html += `<p class="bad" style="margin-bottom:6px">⚠️ Disagreement between rules and AI. Please verify fields before confirming.</p>`;
+  (draft.errors || []).forEach((e) => html += `<p class="bad" style="margin-bottom:6px">${esc(e)}</p>`);
+  
+  if (draft.question) html += `<p style="margin:8px 0;font-size:13.5px"><b>${esc(draft.question)}</b></p>`;
+  if (draft.chips && draft.chips.length) {
+    html += `<div style="margin:8px 0;">` + draft.chips.map((c) => `<span class="chip" data-chip="${esc(c)}">${esc(c)}</span>`).join("") + `</div>`;
+  }
+  if (draft.asked && draft.asked !== "allergens" && draft.asked !== "form" && !draft.form) {
+    html += `<p style="margin:8px 0"><button id="answerBtn" class="btn btn-outline" style="color:var(--slate-800);border-color:var(--slate-300)">Submit Answer</button></p>`;
+  }
+  html += `<p class="muted" style="font-size:11px;margin:8px 0">Safe window &amp; expiry are strictly platform-enforced. Allergens are as declared by donor.</p>`;
+  html += `<div style="display:flex;gap:8px;margin-top:10px">
+    <button id="confirmBtn" class="btn btn-primary">✓ Confirm and Post</button>
+    <button id="cancelBtn" class="btn btn-outline" style="color:var(--slate-700);border-color:var(--slate-300)">Cancel</button>
+  </div></div>`;
+
+  el.innerHTML = html;
+  el.querySelectorAll("[data-chip]").forEach((c) => c.onclick = () => answer(c.dataset.chip));
+  if ($("answerBtn")) $("answerBtn").onclick = () => answer($("text").value);
+  $("confirmBtn").onclick = confirmDraft;
+  $("cancelBtn").onclick = async () => {
+    await api("POST", "/api/ingest/cancel", {draft_id: draft.id}).catch(() => {});
+    draft = null;
+    renderConfirm();
+  };
+}
+
+// CHAT BUBBLES
+function renderChat() {
+  const box = $("chat");
+  box.innerHTML = chat.slice(-12).map((m) => `<div class="bubble ${m.role}">${esc(m.text)}</div>`).join("");
+  box.scrollTop = box.scrollHeight;
+}
+function addChat(role, text) { if (!text) return; chat.push({role, text}); renderChat(); }
+function assistantText(d) { return d.question || String((d.errors || [])[0] || "") || "Understood. Check the card below, then confirm or answer."; }
+
+async function understand() {
+  const text = $("text").value.trim();
+  if (!text) return;
+  addChat("user", text);
+  try {
+    draft = await api("POST", "/api/ingest", {text, channel: "chat"});
+    lastPosted = "";
+    addChat("assistant", assistantText(draft));
+    renderConfirm();
+  } catch (e) { setStatus(e.message, true); }
+}
+
+async function answer(text) {
+  if (!draft) return;
+  addChat("user", text);
+  try {
+    draft = await api("POST", "/api/ingest/answer", {draft_id: draft.id, text});
+    addChat("assistant", assistantText(draft));
+    renderConfirm();
+  } catch (e) { setStatus(e.message, true); }
+}
+
+async function confirmDraft() {
+  if (!draft) return;
+  try {
+    const key = "k-" + draft.id + "-" + Date.now();
+    const l = await api("POST", "/api/ingest/confirm", {draft_id: draft.id, idempotency_key: key});
+    lastPosted = l.clamp_message || "";
+    setStatus(lastPosted ? "Posted. " + lastPosted : "Posted.");
+    draft = null; chat = []; renderChat(); renderConfirm(); $("text").value = ""; refresh();
+  } catch (e) { setStatus(e.message, true); }
+}
+
+$("send").onclick = understand;
+$("pitchChat").onclick = () => {
+  if ($("donor").hidden) { $("role").value = "1"; draft = null; renderConfirm(); applyRole(); refresh(); }
+  $("text").value = "200 plates veg biryani, 60 kg, pickup in 90 min, nuts ledu";
+  $("text").focus();
+};
+
+// FORM FALLBACK ALLERGENS
+let formBusy = false;
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+const formBoxes = () => Array.from($("formAllergens").querySelectorAll('input[type="checkbox"]'));
+function syncFormPost() {
+  $("formPost").disabled = formBusy || !formBoxes().some((b) => b.checked);
+}
+
+function onAllergenChange(ev) {
+  const t = ev.target;
+  if (!t.matches('input[type="checkbox"]')) return;
+  const boxes = formBoxes();
+  if (t.value === "none") {
+    if (t.checked) boxes.forEach((b) => { if (b !== t) b.checked = false; });
+  } else if (t.checked) {
+    boxes.forEach((b) => { if (b.value === "none") b.checked = false; });
+  }
+  syncFormPost();
+}
+
+function buildAllergenBoxes(allergens) {
+  const box = $("formAllergens");
+  box.textContent = "";
+  const add = (value, text) => {
+    const label = document.createElement("label");
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.value = value;
+    label.append(cb, document.createTextNode(" " + text), " ");
+    box.append(label);
+  };
+  allergens.filter((a) => a !== "none").forEach((a) => add(a, cap(a)));
+  add("none", "None declared");
+  syncFormPost();
+}
+
+async function loadMeta() {
+  try {
+    meta = await api("GET", "/api/meta");
+    buildAllergenBoxes(meta.allergens || []);
+  } catch (e) {
+    $("formAllergens").textContent = "";
+    setStatus(e.message, true);
+  }
+  syncFormPost();
+}
+$("formAllergens").addEventListener("change", onAllergenChange);
+
+// Repeat Last Prefill
+$("repeatLast").onclick = async () => {
+  try {
+    const r = await fetch("/api/listings/last", {headers: {"X-Org": org()}});
+    if (r.status === 404) { setStatus("No previous listing to repeat.", true); return; }
+    let last = {};
+    try { last = await r.json(); } catch (e) { last = {}; }
+    if (!r.ok) throw new Error(last.error || ("HTTP " + r.status));
+    const f = $("form");
+    if (last.category != null) f.elements.namedItem("category").value = last.category;
+    if (last.kg != null) f.elements.namedItem("kg").value = last.kg;
+    if (last.minutes != null) f.elements.namedItem("pickupInMin").value = last.minutes;
+    setStatus("Prefilled from your last listing. Choose allergens to post.");
+  } catch (e) { setStatus(e.message, true); }
+};
+
+// Repeat & Post
+$("repeatPost").onclick = async () => {
+  if (!lastSubmitted) { setStatus("No submitted listing to repeat yet.", true); return; }
+  try {
+    const l = await api("POST", "/api/listings", lastSubmitted);
+    setStatus(l.clamp_message ? "Reposted. " + l.clamp_message : "Reposted last listing.");
+    refresh();
+  } catch (e) { setStatus(e.message, true); }
+};
+
+$("form").onsubmit = async (ev) => {
+  ev.preventDefault();
+  const f = new FormData(ev.target);
+  const allergens = formBoxes().filter((b) => b.checked).map((b) => b.value);
+  if (!allergens.length) { setStatus("Choose an allergen or None declared.", true); return; }
+  formBusy = true; syncFormPost();
+  try {
+    const body = {category: f.get("category"), kg: Number(f.get("kg")), pickupInMin: Number(f.get("pickupInMin")), allergens};
+    await api("POST", "/api/listings", body);
+    lastSubmitted = body;
+    $("repeatPost").disabled = false;
+    setStatus("Posted from form."); refresh();
+  } catch (e) { setStatus(e.message, true); }
+  finally { formBusy = false; syncFormPost(); }
+};
+
+// Web Speech Mic
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+$("mic").onclick = () => {
+  if (!SR || !window.isSecureContext) { setStatus("Speech not available here; type the message instead.", true); return; }
+  const rec = new SR();
+  rec.lang = $("lang").value;
+  $("micWrap").classList.add("mic-active");
+  rec.onresult = (e) => {
+    $("micWrap").classList.remove("mic-active");
+    $("text").value = e.results[0][0].transcript;
+    understand();
+  };
+  rec.onerror = () => {
+    $("micWrap").classList.remove("mic-active");
+    setStatus("Speech failed; type the message instead.", true);
+  };
+  rec.onend = () => $("micWrap").classList.remove("mic-active");
+  rec.start();
+};
+if (!window.SpeechRecognition && !window.webkitSpeechRecognition) {
+  $("speechNote").hidden = false;
+  $("mic").disabled = true;
+}
+
+// Clock & State
+let simNowMs = Date.now();
+let simNowApprox = true;
+const STEPS = ["Posted", "Claimed", "Collected", "Delivered"];
+const STEP_INDEX = {posted: 0, claimed: 1, collected: 2, delivered: 3};
+const OFFER_COLOR = {pending: "#d97706", accepted: "#059669", declined: "#64748b", expired: "#dc2626"};
+const SEG = ["proximity", "quantity", "need", "fairness"];
+const RECEIVER_IDS = ["5", "6", "7", "8", "9", "10"];
+const VOLUNTEER_IDS = ["11"];
+
+async function refresh() {
+  try {
+    const viewReq = (async () => {
+      const r = await fetch("/api/view", {headers: {"X-Org": org()}});
+      let data = [];
+      try { data = await r.json(); } catch (e) { data = {error: "bad response"}; }
+      if (!r.ok) throw new Error(data.error || ("HTTP " + r.status));
+      const t = Date.parse(r.headers.get("X-Sim-Now") || "");
+      simNowApprox = Number.isNaN(t);
+      simNowMs = simNowApprox ? Date.now() : t;
+      return data;
+    })();
+    const [listings, impact] = await Promise.all([viewReq, api("GET", "/api/impact")]);
+    renderList(listings);
+    renderTimeline(listings);
+    renderMap(listings);
+    renderImpact(impact);
+    if ($("tabBadgeListings")) $("tabBadgeListings").textContent = listings.length;
+  } catch (e) { setStatus(e.message, true); }
+}
+
+// Stepper HTML
+function stepperHtml(l) {
+  const idx = Object.prototype.hasOwnProperty.call(STEP_INDEX, l.status) ? STEP_INDEX[l.status] : -1;
+  const steps = STEPS.map((name, i) => `<li class="${i < idx ? "done" : i === idx ? "current" : ""}">${esc(name)}</li>`).join("");
+  return `<ol class="stepper">${steps}</ol>` + (l.status === "expired" ? `<div class="bad" style="margin-top:4px;font-size:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px"><span>⚠️ <b>Expired: Unclaimed within safe window</b></span> <button class="btn btn-outline" style="font-size:11px;padding:3px 9px;color:var(--primary-dark);border-color:var(--primary);background:#fff" onclick="$('scenario').click()">↺ Repost Fresh Scenario</button></div>` : "");
+}
+
+// Spoilage Countdown
+function countdownHtml(l) {
+  if (l.status !== "posted" && l.status !== "claimed") return "";
+  const pickupMs = Date.parse(l.pickup_by);
+  const createdMs = Date.parse(l.created);
+  const remain = pickupMs - simNowMs;
+  const total = pickupMs - createdMs;
+  const frac = total > 0 ? Math.min(1, Math.max(0, remain / total)) : 0;
+  const color = frac < 0.25 ? "#dc2626" : frac < 0.5 ? "#d97706" : "#059669";
+  const text = remain < 0 ? "Pickup window has passed"
+    : `${Math.floor(remain / 3600000)}h ${Math.floor((remain % 3600000) / 60000)}m left to pickup`;
+  return `<div class="spoilage-container">
+    <div class="spoilage-header">
+      <span style="color:${color}">⏱️ ${esc(text)}${simNowApprox ? " (approx.)" : ""}</span>
+      <span class="muted">${(frac * 100).toFixed(0)}% window left</span>
+    </div>
+    <div class="bar"><span style="width:${(frac * 100).toFixed(0)}%;background:${color}"></span></div>
+  </div>`;
+}
+
+// Offer HTML with 4-segment score bar
+function offerHtml(o) {
+  const comps = (o.parts && o.parts.components) || {};
+  const wts = (o.parts && o.parts.weights) || {};
+  const sumW = SEG.reduce((s, k) => s + (Number(wts[k]) || 0), 0) || 1;
+  const segs = SEG.map((k) => {
+    const v = Number(comps[k]) || 0;
+    const w = Number(wts[k]) || 0;
+    const c = v * w;
+    return `<span class="seg-${k}" style="width:${(100 * c / sumW).toFixed(2)}%" title="${k}: score ${v.toFixed(2)} × weight ${w.toFixed(2)} = ${c.toFixed(2)}"></span>`;
+  }).join("");
+  const radius = o.radius_km == null ? "radius n/a" : `radius ${esc(o.radius_km)} km`;
+
+  return `<div class="offer">
+    <div class="offer-header">
+      <div><b>${esc(o.receiver)}</b> <span class="badge" style="background:${OFFER_COLOR[o.status] || "#64748b"}">${esc(o.status)}</span></div>
+      <div style="font-size:12px;color:var(--slate-600)">Score <b>${esc(o.score)}</b> · ETA <b>${esc(o.eta)}m</b> · Tier ${esc(o.tier)} (${radius})</div>
+    </div>
+    <div class="seg-bar">${segs}</div>
+    <div class="seg-legend">
+      <span><span class="seg-dot" style="background:#3b82f6"></span>Proximity (${((wts.proximity||0.3)*100).toFixed(0)}%)</span>
+      <span><span class="seg-dot" style="background:#10b981"></span>Quantity</span>
+      <span><span class="seg-dot" style="background:#f59e0b"></span>Need</span>
+      <span><span class="seg-dot" style="background:#8b5cf6"></span>Fairness</span>
+    </div>
+  </div>`;
+}
+
+// Actions by Role
+function actions(l) {
+  const r = $("role").value;
+  const out = [];
+  if (RECEIVER_IDS.includes(r) && l.status === "posted" &&
+      (l.offers || []).some((o) => String(o.receiver_id) === r && o.status === "pending")) {
+    out.push(`<div class="action-buttons-row">
+      <button class="btn btn-primary" data-act="claim" data-id="${esc(l.id)}">✓ Claim Food Offer</button>
+      <button class="btn btn-outline" style="color:var(--slate-700);border-color:var(--slate-300)" data-act="decline" data-id="${esc(l.id)}">✕ Decline</button>
+    </div>`);
+  }
+  if (VOLUNTEER_IDS.includes(r) && (l.status === "claimed" || l.status === "collected")) {
+    const isPickup = l.status === "claimed";
+    out.push(`<div class="action-buttons-row">
+      <div class="otp-input-group">
+        <input data-otp="${esc(l.id)}" placeholder="${isPickup ? 'Pickup' : 'Drop'} OTP" inputmode="numeric" size="8">
+        <button class="btn btn-primary" data-collect="${esc(l.id)}">${isPickup ? 'Verify Pickup' : 'Verify Delivery'}</button>
+      </div>
+      <span class="muted" style="font-size:11.5px">Code valid for 10 min.</span>
+    </div>`);
+  }
+  return out.join(" ");
+}
+
+// Listing Card HTML: MUST keep lines exact for demo_run.py compatibility!
+function cardHtml(l) {
+  const offers = (l.offers || []).map(offerHtml).join("");
+  const otps = (l.pickup_otp != null ? `<div class="otp-box"><span>Pickup Handoff OTP (share with courier):</span><span class="otp-code">${esc(l.pickup_otp)}</span></div>` : "") +
+    (l.drop_otp != null ? `<div class="otp-box"><span>Drop Verification OTP (share upon arrival):</span><span class="otp-code">${esc(l.drop_otp)}</span></div>` : "");
+  const allergenText = (l.allergens || []).filter((a) => a !== "none").join(", ") || "none declared";
+  const events = (l.events || []).map((e) => `<li>${esc(clockText(e.at))} ${esc(e.text)}</li>`).join("");
+
+  return `<div class="card"><b>#${esc(l.id)} ${esc(l.label)}</b> · ${esc(l.kg)} kg · <i>${esc(l.status)}</i>
+    ${stepperHtml(l)}
+    ${countdownHtml(l)}
+    <div class="offers-group">${offers}</div>
+    ${otps}
+    ${actions(l)}
+    <details style="margin:8px 0;font-size:12px"><summary style="cursor:pointer;color:var(--slate-600);font-weight:600">Audit Events (${(l.events||[]).length})</summary><ol class="timeline">${events}</ol></details>
+    <div class="muted">Window: created ${esc(clockText(l.created))} to expires ${esc(clockText(l.expires))} · storage: ${esc(l.storage)}</div>
+    <div class="muted">Allergens: ${esc(allergenText)}</div>
+    <div class="muted">${esc(l.disclaimer)}</div>
+    <div class="muted">Non-certification: this is a surplus-matching estimate, not a food-safety certification.</div></div>`;
+}
+
+function renderList(listings) {
+  const typed = {};
+  document.querySelectorAll("input[data-otp]").forEach((i) => { if (i.value) typed[i.dataset.otp] = i.value; });
+  $("list").innerHTML = listings.map(cardHtml).join("") || `<p class="muted" style="padding:16px;background:var(--slate-50);border-radius:8px">No active surplus listings currently visible to your selected role.</p>`;
+  document.querySelectorAll("input[data-otp]").forEach((i) => { i.value = typed[i.dataset.otp] || ""; });
+  
+  document.querySelectorAll("[data-act]").forEach((b) => b.onclick = () => act(b.dataset.act, b.dataset.id));
+  document.querySelectorAll("[data-collect]").forEach((b) => b.onclick = () => {
+    const otp = b.closest(".card").querySelector("input[data-otp]").value.trim();
+    collect(b.dataset.collect, otp);
+  });
+}
+
+async function act(kind, id) {
+  try {
+    await api("POST", `/api/listings/${id}/${kind}`, {});
+    setStatus(kind + " ok"); refresh();
+  } catch (e) { setStatus(e.message, true); }
+}
+
+async function collect(id, otp) {
+  if (!otp) { setStatus("Enter the OTP first.", true); return; }
+  try {
+    await api("POST", `/api/listings/${id}/collect`, {otp}).catch(async (e) => {
+      // If pickup already done, attempt deliver
+      return await api("POST", `/api/listings/${id}/deliver`, {otp});
+    });
+    setStatus("Handoff verified successfully."); refresh();
+  } catch (e) { setStatus(e.message, true); }
+}
+
+function renderTimeline(listings) {
+  const events = listings.flatMap((l) => l.events.map((e) => ({at: e.at, text: `#${l.id}: ${e.text}`})));
+  events.sort((a, b) => a.at < b.at ? -1 : 1);
+  $("timeline").innerHTML = events.slice(-30).map((e) => `<li><b>${esc(clockText(e.at))}</b> ${esc(e.text)}</li>`).join("") || `<li class="muted">No events recorded yet.</li>`;
+}
+
+function fitToOrgs(orgs) {
+  const pts = orgs.map((o) => [o.lat, o.lng]);
+  if (pts.length) map.fitBounds(L.latLngBounds(pts), {padding: [30, 30]});
+  else map.setView([16.30, 80.45], 10);
+}
+
+function receiverOf(l) {
+  const offs = l.offers || [];
+  const o = offs.find((x) => /claim|accept/i.test(x.status)) || offs[0];
+  return o ? o.receiver : null;
+}
+
+function involves(o, l) {
+  if (o.role === "donor") return l.donor === o.name;
+  if (o.role === "receiver") return receiverOf(l) === o.name;
+  if (o.role === "volunteer") return l.volunteer === o.name;
+  return false;
+}
+
+function popupHtml(o, active) {
+  let html = `<div style="font-family:'Plus Jakarta Sans',sans-serif"><b>${esc(o.name)}</b> <span class="badge" style="background:${ROLE_COLOR[o.role]}">${esc(ROLE_LABEL[o.role]||o.role)}</span>`;
+  active.filter((l) => involves(o, l)).forEach((l) => {
+    html += `<div style="margin-top:8px;padding-top:6px;border-top:1px dashed #cbd5e1">
+      <b>#${esc(l.id)} ${esc(l.label)}</b> · ${esc(l.kg)} kg · <i>${esc(l.status)}</i><br>
+      <span class="muted">Pickup by ${esc(clockText(l.pickup_by))} · safe until ${esc(clockText(l.expires))}</span><br>
+      <span class="muted">${esc(l.storage)}</span></div>`;
+  });
+  html += `</div>`;
+  return html;
+}
+
+function drawLines(orgs, active) {
+  const find = (name) => orgs.find((o) => o.name === name);
+  active.forEach((l) => {
+    const donor = find(l.donor);
+    if (!donor) return;
+    const rcv = find(receiverOf(l));
+    const vol = find(l.volunteer);
+    if (rcv) L.polyline([[donor.lat, donor.lng], [rcv.lat, rcv.lng]], {color: "#059669", weight: 3, dashArray: "6,6"}).addTo(lines);
+    if (vol) L.polyline([[donor.lat, donor.lng], [vol.lat, vol.lng]], {color: "#0284c7", weight: 3, dashArray: "6,6"}).addTo(lines);
+  });
+}
+
+let orgList = [];
+async function renderMap(listings) {
+  markers.clearLayers();
+  lines.clearLayers();
+  const orgs = await api("GET", "/api/orgs");
+  orgList = orgs;
+  const active = listings.filter((l) => ACTIVE.includes(l.status));
+  orgs.forEach((o) => {
+    const color = ROLE_COLOR[o.role] || "#64748b";
+    L.circleMarker([o.lat, o.lng], {radius: 8, color: "#fff", weight: 2, fillColor: color, fillOpacity: 0.9})
+      .bindTooltip(esc(o.name))
+      .bindPopup(() => popupHtml(o, active))
+      .addTo(markers);
+  });
+  drawLines(orgs, active);
+  if (fitPending) { fitPending = false; fitToOrgs(orgs); }
+}
+
+// SSE change stream
+let es = null;
+function connect() {
+  if (es) es.close();
+  es = new EventSource("/api/stream");
+  es.addEventListener("change", () => refresh());
+}
+
+// RENDER IMPACT
+function renderImpact(d) {
+  const m = d.meals || [];
+  const co = d.co2e_kg || [];
+  const rate = d.rescue_rate == null ? "—" : Math.round(d.rescue_rate * 100) + "%";
+  const el = $("impact");
+  
+  el.innerHTML = `
+    <div class="impact-metric-card metric-card-kg">
+      <span class="impact-metric-title">⚖️ Rescued Surplus</span>
+      <b class="impact-metric-value">${d.delivered_kg} kg</b>
+      <span class="impact-metric-sub">Diverted from municipal landfills</span>
+    </div>
+    <div class="impact-metric-card metric-card-meals">
+      <span class="impact-metric-title">🍲 Meals Provided</span>
+      <b class="impact-metric-value">${m[1] ?? 0}</b>
+      <span class="impact-metric-sub">Range: ${m[0] ?? 0} – ${m[2] ?? 0} (Mid @ 0.4 kg)</span>
+    </div>
+    <div class="impact-metric-card metric-card-co2">
+      <span class="impact-metric-title">🌿 CO₂e Averted</span>
+      <b class="impact-metric-value">${co[1] ?? 0} kg</b>
+      <span class="impact-metric-sub">Indicative FAO Methane Index</span>
+    </div>
+    <div class="impact-metric-card metric-card-rate">
+      <span class="impact-metric-title">🎯 Rescue Rate</span>
+      <b class="impact-metric-value">${rate}</b>
+      <span class="impact-metric-sub">Efficiency across active corridor</span>
+    </div>
+    <div class="impact-metric-card metric-card-waste">
+      <span class="impact-metric-title">⚠️ Expired Waste</span>
+      <b class="impact-metric-value">${d.expired_kg} kg</b>
+      <span class="impact-metric-sub">Transparently logged as waste</span>
+    </div>
+  `;
+
+  const ul = $("assumptionList");
+  ul.textContent = "";
+  (d.assumptions || []).forEach((a) => {
+    const li = document.createElement("li");
+    li.textContent = a;
+    ul.append(li);
+  });
+
+  $("sponsorMeals").textContent = m[1] == null ? "—" : String(m[1]);
+  $("sponsorDelivered").textContent = d.delivered_kg == null ? "—" : String(d.delivered_kg);
+  $("sponsorRate").textContent = rate;
+}
+
+function updateFocusDonorPill() {
+  const pill = $("focusDonorPill");
+  if (!pill) return;
+  const sel = $("role");
+  const opt = sel ? sel.options[sel.selectedIndex] : null;
+  const label = opt ? opt.text.trim() : "";
+  
+  if (label.startsWith("Donor:")) {
+    const donorName = label.replace(/^Donor:\s*/, "");
+    pill.innerHTML = `📍 Focus Donor: <b>${esc(donorName)}</b>`;
+  } else if (label.startsWith("Receiver:")) {
+    const receiverName = label.replace(/^Receiver:\s*/, "");
+    pill.innerHTML = `🍲 Active Receiver: <b>${esc(receiverName)}</b>`;
+  } else if (label.startsWith("Volunteer:")) {
+    const volName = label.replace(/^Volunteer:\s*/, "");
+    pill.innerHTML = `🛵 Active Courier: <b>Volunteer ${esc(volName)}</b>`;
+  } else if (label.startsWith("Sponsor:")) {
+    const sponsorName = label.replace(/^Sponsor:\s*/, "");
+    pill.innerHTML = `🏢 Active Sponsor: <b>${esc(sponsorName)}</b>`;
+  } else {
+    pill.innerHTML = `📍 Active Role: <b>${esc(label)}</b>`;
+  }
+}
+
+async function applyRole() {
+  updateFocusDonorPill();
+  if (!orgList.length) { try { orgList = await api("GET", "/api/orgs"); } catch (e) { return; } }
+  const me = orgList.find((o) => String(o.id) === org());
+  const sponsor = !!me && me.role === "sponsor";
+  $("donor").hidden = sponsor;
+  $("listings").hidden = sponsor;
+  $("sponsorPanel").hidden = !sponsor;
+}
+
+$("speed").onchange = async () => {
+  try {
+    const d = await api("POST", "/api/demo/speed", {scale: Number($("speed").value)});
+    $("status").textContent = "Clock " + String(d.scale ?? $("speed").value) + "x";
+    refresh();
+  } catch (e) { setStatus(e.message, true); }
+};
+
+$("reset").onclick = async () => {
+  await api("POST", "/api/demo/reset", {}).catch(() => {});
+  await api("POST", "/api/demo/speed", {scale: 1}).catch(() => {});
+  $("speed").value = "1";
+  fitPending = true;
+  setStatus("Demo reset. Clock running at 1x (Real-time).");
+  refresh();
+};
+
+$("scenario").onclick = async () => {
+  await api("POST", "/api/demo/reset", {}).catch(() => {});
+  const scale = Number($("speed").value) || 1;
+  await api("POST", "/api/demo/scenario", {scale}).catch((e) => setStatus(e.message, true));
+  fitPending = true;
+  setStatus(`Pitch scenario loaded (Function Hall B · 60 kg biryani at ${scale}x speed). Active and ready to claim!`);
+  refresh();
+};
+
+$("role").onchange = () => {
+  draft = null;
+  renderConfirm();
+  applyRole();
+  refresh();
+};
+
+// TAB SWITCHING LOGIC
+document.querySelectorAll(".nav-tab").forEach((tab) => {
+  tab.onclick = () => {
+    document.querySelectorAll(".nav-tab").forEach((t) => t.classList.remove("active"));
+    tab.classList.add("active");
+    const target = tab.dataset.tab;
+    $("tab-operations-view").style.display = target === "tab-operations" ? "grid" : "none";
+    $("tab-business-view").style.display = target === "tab-business" ? "flex" : "none";
+    $("tab-safety-view").style.display = target === "tab-safety" ? "flex" : "none";
+    $("tab-science-view").style.display = target === "tab-science" ? "block" : "none";
+    if (target === "tab-operations") map.invalidateSize();
+  };
+});
+
+// SIMULATOR LOGIC
+function updateSim() {
+  const events = Number($("simEvents").value);
+  const avgKg = Number($("simKg").value);
+  $("simEventsVal").textContent = events;
+  $("simKgVal").textContent = avgKg;
+
+  const totalKg = events * avgKg;
+  const meals = Math.round(totalKg / 0.4);
+  const foodVal = Math.round(meals * 35); // ₹35 cook cost
+  const disposalSaved = Math.round(events * 1200); // ₹1,200 commercial disposal cost per event
+  const co2 = Math.round(totalKg * 2.5);
+  const csrCost = Math.round(meals * 4); // ₹4 / meal logistics
+
+  $("simRescuedKg").textContent = totalKg.toLocaleString() + " kg";
+  $("simMeals").textContent = meals.toLocaleString();
+  $("simFoodVal").textContent = "₹" + foodVal.toLocaleString();
+  $("simDisposalSaved").textContent = "₹" + disposalSaved.toLocaleString();
+  $("simCO2").textContent = co2.toLocaleString() + " kg";
+  $("simCsrCost").textContent = "₹" + csrCost.toLocaleString();
+}
+updateSim();
+
+connect();
+refresh();
+loadMeta();
+applyRole();
+setInterval(refresh, 5000);
+</script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.class
+
+# C extensions
+*.so
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+db.sqlite3.bak
+
+# Test / run logs
+runserver_*.txt
+server_*.txt
+test_*.txt
+eval_*.txt
+diag_*.txt
+edge_*.txt
+demo_run_*.err.txt
+demo_run_*.log
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE / tools
+.vscode/
+.idea/
+.codebenders/
+
+# OS
+.DS_Store
+Thumbs.db
