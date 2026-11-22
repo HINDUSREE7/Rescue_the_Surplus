@@ -1,5 +1,7 @@
 # PITCH NOTES: Rescue the Surplus
 
+- **Live Deployment:** [https://rescue-the-surplus.vercel.app/](https://rescue-the-surplus.vercel.app/)
+
 ## Architecture (one line)
 Every listing is created by one writer, core/engine.py post(); all other paths (form and chat confirm) call it, so safety rules are enforced in one place.
 

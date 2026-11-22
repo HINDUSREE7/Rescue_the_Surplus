@@ -1,5 +1,7 @@
 # Rescue the Surplus (hackathon prototype)
 
+> 🚀 **Live Deployment:** [https://rescue-the-surplus.vercel.app/](https://rescue-the-surplus.vercel.app/)
+
 Donors say or type surplus food ("60 kilo biryani migilindi, 11:30 lopu"). The system turns it into a
 validated listing after one confirming tap, then offers it only to receivers who can arrive inside the
 food's safe window. If nobody claims it, the search widens on a spoilage clock. Guntur–Vijayawada
