@@ -1429,6 +1429,34 @@
     color: var(--slate-600);
     border: 1px solid var(--slate-200);
   }
+
+  /* DEMO FLOW PILLS & EMPTY LISTINGS STATE */
+  .demo-flow-pills {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .demo-pill {
+    font-size: 11.5px !important;
+    padding: 3px 8px !important;
+    color: var(--slate-700) !important;
+    border-color: var(--slate-300) !important;
+    background: #ffffff !important;
+  }
+  .demo-pill:hover {
+    background: var(--primary-bg) !important;
+    border-color: var(--primary) !important;
+    color: var(--primary-dark) !important;
+  }
+  .empty-listings-card {
+    text-align: center;
+    padding: 28px 20px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(240,253,244,0.6));
+    border: 1.5px dashed rgba(52, 211, 153, 0.5);
+    border-radius: var(--radius-md);
+    margin: 8px 0;
+  }
   .source-badge.source-chat { background: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
   .source-badge.source-voice { background: #fce7f3; color: #9d174d; border-color: #fbcfe8; }
   .source-badge.source-form { background: #fef3c7; color: #92400e; border-color: #fde68a; }
@@ -1803,10 +1831,17 @@
 
     <!-- LIVE LISTINGS FEED -->
     <section id="listings">
-      <div class="section-header">
+      <div class="section-header" style="flex-wrap:wrap;gap:10px">
         <div>
           <h3 class="section-title">📡 Active Surplus Listings</h3>
           <p class="section-subtitle">Spoilage clock matching with explainable multi-tier offer scoring</p>
+        </div>
+        <div class="demo-flow-pills">
+          <span style="font-size:11px;font-weight:700;color:var(--slate-500);text-transform:uppercase;margin-right:2px">Role Switch:</span>
+          <button type="button" class="btn btn-outline demo-pill" onclick="switchRole('2')">1. Donor (Hall B)</button>
+          <button type="button" class="btn btn-outline demo-pill" onclick="switchRole('7')">2. Receiver (NGO G)</button>
+          <button type="button" class="btn btn-outline demo-pill" onclick="switchRole('12')">3. Courier (Vol L)</button>
+          <button type="button" class="btn btn-outline demo-pill" onclick="switchRole('15')">4. Sponsor</button>
         </div>
       </div>
       <div id="list"></div>
@@ -2042,12 +2077,33 @@ let chat = [];          // intake conversation, client-side only: {role: "user" 
 let lastPosted = "";    // clamp message from the last confirmed listing, shown on the card
 let lastSubmitted = null; // last listing values posted from the form, for Repeat-posted
 
-// Leaflet map setup with smooth view
+// Leaflet map setup with smooth view & reliable CDN tile providers
 const map = L.map("map").setView([16.30, 80.45], 10);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  maxZoom: 18,
-  attribution: "© OpenStreetMap contributors · Rescue the Surplus"
-}).addTo(map);
+
+const voyagerTile = L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+  subdomains: "abcd",
+  maxZoom: 20,
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+});
+
+const positronTile = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+  subdomains: "abcd",
+  maxZoom: 20,
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+});
+
+const esriTile = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", {
+  maxZoom: 19,
+  attribution: 'Tiles &copy; Esri &mdash; OpenStreetMap contributors'
+});
+
+voyagerTile.addTo(map);
+
+L.control.layers({
+  "🌿 Eco Voyager (Default)": voyagerTile,
+  "🏙️ Positron (Light)": positronTile,
+  "🗺️ World Street Map": esriTile
+}, null, { position: "topright" }).addTo(map);
 
 const markers = L.layerGroup().addTo(map);
 const lines = L.layerGroup().addTo(map);
@@ -2487,10 +2543,41 @@ function cardHtml(l) {
     <div class="muted">Non-certification: this is a surplus-matching estimate, not a food-safety certification.</div></div>`;
 }
 
+function switchRole(id) {
+  $("role").value = String(id);
+  draft = null;
+  renderConfirm();
+  applyRole();
+  refresh();
+}
+window.switchRole = switchRole;
+
+function emptyListHtml() {
+  const currentOrg = (orgList || []).find((o) => String(o.id) === org());
+  const role = currentOrg ? currentOrg.role : "donor";
+  const name = currentOrg ? currentOrg.name : "Selected Organization";
+  return `<div class="empty-listings-card">
+    <div style="font-size:32px;margin-bottom:8px">🍲</div>
+    <h4 style="font-size:15px;font-weight:700;color:var(--slate-900);margin-bottom:6px">No Active Listings for ${esc(name)}</h4>
+    <p class="muted" style="max-width:500px;margin:0 auto 14px;font-size:12.5px">
+      ${role === 'donor' 
+        ? 'You have not posted any surplus food yet. Type/say an intake message on the left or trigger the pitch demo scenario.' 
+        : role === 'receiver' 
+        ? 'No active surplus offers are currently pending for your kitchen. When a donor posts food within your corridor, it will appear here.' 
+        : 'No courier assignments are active for your volunteer account right now.'}
+    </p>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-scenario" onclick="$('scenario').click()">▶️ Run Pitch Demo Scenario</button>
+      <button class="btn btn-primary" onclick="$('pitchChat').click()">🍛 Quick 200 Plates Biryani</button>
+      <button class="btn btn-outline" style="color:var(--slate-700);border-color:var(--slate-300);background:#fff" onclick="switchRole('2')">Switch to Function Hall B (Donor)</button>
+    </div>
+  </div>`;
+}
+
 function renderList(listings) {
   const typed = {};
   document.querySelectorAll("input[data-otp]").forEach((i) => { if (i.value) typed[i.dataset.otp] = i.value; });
-  $("list").innerHTML = listings.map(cardHtml).join("") || `<p class="muted" style="padding:16px;background:var(--slate-50);border-radius:8px">No active surplus listings currently visible to your selected role.</p>`;
+  $("list").innerHTML = listings.map(cardHtml).join("") || emptyListHtml();
   document.querySelectorAll("input[data-otp]").forEach((i) => { i.value = typed[i.dataset.otp] || ""; });
   
   document.querySelectorAll("[data-act]").forEach((b) => b.onclick = () => act(b.dataset.act, b.dataset.id));
@@ -2697,7 +2784,9 @@ $("scenario").onclick = async () => {
   const scale = Number($("speed").value) || 1;
   await api("POST", "/api/demo/scenario", {scale}).catch((e) => setStatus(e.message, true));
   fitPending = true;
-  setStatus(`Pitch scenario loaded (Function Hall B · 60 kg biryani at ${scale}x speed). Active and ready to claim!`);
+  $("role").value = "2";
+  applyRole();
+  setStatus(`Pitch scenario loaded (Function Hall B · 60 kg biryani at ${scale}x speed). Switched to Donor: Function Hall B.`);
   refresh();
 };
 
