@@ -2077,32 +2077,31 @@ let chat = [];          // intake conversation, client-side only: {role: "user" 
 let lastPosted = "";    // clamp message from the last confirmed listing, shown on the card
 let lastSubmitted = null; // last listing values posted from the form, for Repeat-posted
 
-// Leaflet map setup with smooth view & reliable CDN tile providers
+// Leaflet map setup: Open Humanitarian & Community Logistics Tiles (100% Free, No API Key Required)
 const map = L.map("map").setView([16.30, 80.45], 10);
 
-const voyagerTile = L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-  subdomains: "abcd",
-  maxZoom: 20,
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-});
-
-const positronTile = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-  subdomains: "abcd",
-  maxZoom: 20,
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-});
-
-const esriTile = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", {
+const hotTile = L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
   maxZoom: 19,
-  attribution: 'Tiles &copy; Esri &mdash; OpenStreetMap contributors'
+  subdomains: "abc",
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles by <a href="https://www.hotosm.org/">Humanitarian OSM</a>'
 });
 
-voyagerTile.addTo(map);
+const esriStreetTile = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", {
+  maxZoom: 19,
+  attribution: 'Tiles &copy; Esri &mdash; Sources: Esri, OpenStreetMap'
+});
+
+const osmDeTile = L.tileLayer("https://tile.openstreetmap.de/{z}/{x}/{y}.png", {
+  maxZoom: 18,
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+});
+
+hotTile.addTo(map);
 
 L.control.layers({
-  "🌿 Eco Voyager (Default)": voyagerTile,
-  "🏙️ Positron (Light)": positronTile,
-  "🗺️ World Street Map": esriTile
+  "🌿 Food Relief (Humanitarian)": hotTile,
+  "🗺️ World Street Map (Esri)": esriStreetTile,
+  "📍 Standard Streets (OSM)": osmDeTile
 }, null, { position: "topright" }).addTo(map);
 
 const markers = L.layerGroup().addTo(map);
