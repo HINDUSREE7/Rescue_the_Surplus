@@ -38,8 +38,8 @@ class Listing(models.Model):
     category = models.CharField(max_length=32)
     kg = models.FloatField()
     allergens = models.JSONField(default=list)  # ["none"] = explicitly declared none
-    created = models.DateTimeField()
-    expires = models.DateTimeField()  # safe-window end, engine-owned
+    created = models.DateTimeField(db_index=True)
+    expires = models.DateTimeField(db_index=True)  # safe-window end, engine-owned
     pickup_by = models.DateTimeField()  # min(donor deadline, expires - margin)
     status = models.CharField(max_length=12, choices=STATUS, default=POSTED, db_index=True)
     tier = models.IntegerField(default=-1)
@@ -63,6 +63,9 @@ class Listing(models.Model):
     class Meta:
         ordering = ["-created", "-id"]
 
+    def __str__(self):
+        return f"Listing #{self.id} {self.category} ({self.kg:g}kg, {self.status})"
+
 
 class Offer(models.Model):
     STATUS = [
@@ -84,6 +87,9 @@ class Offer(models.Model):
             models.UniqueConstraint(fields=["listing", "receiver"], name="unique_offer")
         ]
 
+    def __str__(self):
+        return f"Offer #{self.id} for Listing #{self.listing_id} to {self.receiver.name} ({self.status})"
+
 
 class Event(models.Model):
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name="events")
@@ -92,6 +98,9 @@ class Event(models.Model):
 
     class Meta:
         ordering = ["at", "id"]
+
+    def __str__(self):
+        return f"Event #{self.id} for Listing #{self.listing_id} at {self.at}: {self.text[:30]}"
 
 
 class Draft(models.Model):
@@ -111,9 +120,12 @@ class Draft(models.Model):
     missing = models.JSONField(default=list)
     asked = models.CharField(max_length=20, blank=True, default="")
     clarify_count = models.PositiveSmallIntegerField(default=0)
-    status = models.CharField(max_length=12, choices=STATUS, default="open")
+    status = models.CharField(max_length=12, choices=STATUS, default="open", db_index=True)
     idempotency_key = models.CharField(max_length=64, blank=True, default="")
     listing = models.ForeignKey(
         Listing, null=True, blank=True, on_delete=models.SET_NULL, related_name="drafts"
     )
-    created = models.DateTimeField()
+    created = models.DateTimeField(db_index=True)
+
+    def __str__(self):
+        return f"Draft #{self.id} ({self.org.name}, {self.status})"

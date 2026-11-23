@@ -5,10 +5,11 @@ No HTTP here. Every listing is created by post(). Only OTP-confirmed deliveries 
 import math
 import re
 import secrets
+import threading
 from datetime import timedelta
 
 from django.db import transaction
-from django.db.models import Q, Sum
+from django.db.models import Case, F, Q, Sum, Value, When
 from django.utils import timezone
 
 from .models import Event, Listing, Offer, Org
@@ -62,22 +63,28 @@ class Err(Exception):
 
 
 # ---- Simulated clock (per process, demo only) ----
+_clock_lock = threading.Lock()
 _clock = {"scale": 1.0, "real0": timezone.now(), "sim0": timezone.now()}
 
 
 def now():
     real = timezone.now()
-    return _clock["sim0"] + (real - _clock["real0"]) * _clock["scale"]
+    with _clock_lock:
+        return _clock["sim0"] + (real - _clock["real0"]) * _clock["scale"]
 
 
 def set_scale(scale):
-    current = now()
-    _clock.update(scale=max(1.0, min(float(scale), 600.0)), real0=timezone.now(), sim0=current)
-    return _clock["scale"]
+    with _clock_lock:
+        real = timezone.now()
+        current = _clock["sim0"] + (real - _clock["real0"]) * _clock["scale"]
+        _clock.update(scale=max(1.0, min(float(scale), 600.0)), real0=real, sim0=current)
+        return _clock["scale"]
 
 
 def reset_clock():
-    _clock.update(scale=1.0, real0=timezone.now(), sim0=timezone.now())
+    with _clock_lock:
+        t = timezone.now()
+        _clock.update(scale=1.0, real0=t, sim0=t)
 
 
 # ---- Geometry and capacity ----
@@ -99,6 +106,16 @@ def free_capacity(org):
     return org.capacity - used
 
 
+def free_capacities(orgs=None):
+    """Batch-compute free capacity map for receivers to eliminate N+1 DB queries."""
+    qs = Listing.objects.filter(status__in=[CLAIMED, COLLECTED], receiver__isnull=False)
+    if orgs is not None:
+        qs = qs.filter(receiver__in=orgs)
+    used_map = {row["receiver_id"]: (row["used"] or 0.0)
+                for row in qs.values("receiver_id").annotate(used=Sum("kg"))}
+    return used_map
+
+
 def free_volunteers():
     busy = (Listing.objects.filter(status__in=[CLAIMED, COLLECTED])
             .exclude(volunteer=None).values_list("volunteer_id", flat=True))
@@ -117,12 +134,14 @@ def rank(listing, at, radius):
     weights = {"proximity": 0.30 + 0.20 * u, "quantity": 0.20,
                "need": 0.30 - 0.10 * u, "fairness": 0.20 - 0.10 * u}
     vols = free_volunteers()
+    receivers = list(Org.objects.filter(role="receiver"))
+    used_map = free_capacities(receivers)
     out = []
-    for r in Org.objects.filter(role="receiver"):
+    for r in receivers:
         d = km(donor, r)
         if d > radius:  # hard filter: distance
             continue
-        free = free_capacity(r)
+        free = r.capacity - (used_map.get(r.id) or 0.0)
         if free < listing.kg:  # hard filter: capacity
             continue
         lead = min((travel_min(v, donor) for v in vols), default=travel_min(r, donor))
@@ -187,7 +206,7 @@ def _validate(org, category, kg, allergens):
     if category not in CATEGORIES:
         raise Err(400, "unknown category")
     try:
-        kg = float(kg)
+        kg = round(float(kg), 2)
     except (TypeError, ValueError):
         raise Err(400, f"kg must be a number between {KG_MIN} and {KG_MAX}")
     if not (KG_MIN <= kg <= KG_MAX) or math.isnan(kg):
@@ -394,7 +413,7 @@ def tick(at=None):
     at = at or now()
     with transaction.atomic():
         qs = Listing.objects.select_for_update(skip_locked=True).filter(
-            status__in=[POSTED, CLAIMED])
+            status__in=[POSTED, CLAIMED]).select_related("donor", "receiver", "volunteer").prefetch_related("offers")
         for listing in qs:
             if listing.status == CLAIMED:
                 if at >= listing.pickup_by:
@@ -404,17 +423,19 @@ def tick(at=None):
                 _expire(listing, at)
                 continue
             behind = listing.tier < due_tier(listing, at)
-            pending = listing.offers.filter(status="pending").exists()
+            pending = any(o.status == "pending" for o in listing.offers.all())
             if behind or not pending:
                 escalate(listing, at)
 
 
 # ---- Views and impact ----
 def impact():
-    def kg_sum(status):
-        return float(Listing.objects.filter(status=status).aggregate(s=Sum("kg"))["s"] or 0)
-
-    delivered, expired = kg_sum(DELIVERED), kg_sum(EXPIRED)
+    aggregates = Listing.objects.aggregate(
+        delivered=Sum(Case(When(status=DELIVERED, then=F("kg")), default=Value(0.0))),
+        expired=Sum(Case(When(status=EXPIRED, then=F("kg")), default=Value(0.0))),
+    )
+    delivered = float(aggregates["delivered"] or 0.0)
+    expired = float(aggregates["expired"] or 0.0)
     closed = delivered + expired
     return {
         "delivered_kg": round(delivered, 1),
@@ -482,7 +503,7 @@ def view(org):
         qs = Listing.objects.filter(volunteer=org)
     else:  # sponsor: impact only; listing detail is withheld
         qs = Listing.objects.none()
-    listings = qs.select_related("donor", "receiver", "volunteer").order_by("-created", "-id")[:50]
+    listings = qs.select_related("donor", "receiver", "volunteer").prefetch_related("offers__receiver", "events").order_by("-created", "-id")[:50]
     return [_listing_json(l, org) for l in listings]
 
 

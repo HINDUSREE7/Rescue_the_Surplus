@@ -513,6 +513,7 @@ def confirm(org, draft_id, edits=None, idempotency_key="", at=None):
         draft.listing = listing
         draft.idempotency_key = idempotency_key or ""
         draft.raw_text = ""
+        draft.field_sources = {}
         draft.save()
     return listing, msg
 
@@ -524,5 +525,6 @@ def cancel(org, draft_id):
     if draft.status == "open":
         draft.status = "cancelled"
         draft.raw_text = ""
-        draft.save(update_fields=["status", "raw_text"])
+        draft.field_sources = {}
+        draft.save(update_fields=["status", "raw_text", "field_sources"])
     return {"ok": True}

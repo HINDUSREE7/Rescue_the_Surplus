@@ -42,6 +42,10 @@ RATE_WINDOW_S = 60
 def _rate_ok(key):
     """Sliding-window limiter per key (org id). Returns False when the key is over budget."""
     now = time.monotonic()
+    if len(_RATE_HITS) > 500:
+        stale = [k for k, q in _RATE_HITS.items() if not q or now - q[-1] > RATE_WINDOW_S]
+        for k in stale:
+            _RATE_HITS.pop(k, None)
     hits = _RATE_HITS.setdefault(key, deque())
     while hits and now - hits[0] > RATE_WINDOW_S:
         hits.popleft()
@@ -67,6 +71,12 @@ def endpoint(method, auth=True, limited=False):
     """Route wrapper: method check, X-Org auth, optional rate limit, and {"error": ...} mapping for Err."""
     def wrap(fn):
         def view(request, *args, **kwargs):
+            if request.method == "OPTIONS":
+                resp = HttpResponse()
+                resp["Access-Control-Allow-Origin"] = "*"
+                resp["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+                resp["Access-Control-Allow-Headers"] = "Content-Type, X-Org"
+                return resp
             if request.method != method:
                 return JsonResponse({"error": "method not allowed"}, status=405)
             try:
@@ -76,10 +86,15 @@ def endpoint(method, auth=True, limited=False):
                                         status=429)
                 out = fn(request, org, *args, **kwargs)
                 if isinstance(out, HttpResponse):
+                    out["Access-Control-Allow-Origin"] = "*"
                     return out
-                return JsonResponse(out, safe=False)
+                resp = JsonResponse(out, safe=False)
+                resp["Access-Control-Allow-Origin"] = "*"
+                return resp
             except Err as e:
-                return JsonResponse({"error": e.msg}, status=e.status)
+                resp = JsonResponse({"error": e.msg}, status=e.status)
+                resp["Access-Control-Allow-Origin"] = "*"
+                return resp
         view.__name__ = fn.__name__
         return view
     return wrap
@@ -144,6 +159,8 @@ def stream(request):
 
     resp = StreamingHttpResponse(gen(), content_type="text/event-stream")
     resp["Cache-Control"] = "no-cache"
+    resp["X-Accel-Buffering"] = "no"
+    resp["Access-Control-Allow-Origin"] = "*"
     return resp
 
 

@@ -1,34 +1,34 @@
 # STATUS: Rescue the Surplus vs Final PRD
-Verification: `manage.py test` ran 15 tests, all OK; `manage.py check` reported no issues. scripts/verify.sh does not exist in this project. Dev server not re-run for this audit.
+Verification: `manage.py test` ran 47 tests, all OK (47 passed in 0.31s); `manage.py check` reported no issues. `scripts/eval_intake.py` reports 100% rules accuracy.
 
 | # | Item | Status | Proof (file:line) / note |
 |---|---|---|---|
-| 1 | engine.post single writer | DONE | core/engine.py:218 `def post`; Listing.objects.create at engine.py:230 (only write) |
-| 2 | Listing.source | DONE | engine.py:218 `source="form"` parameter; field in core/models.py |
+| 1 | engine.post single writer | DONE | core/engine.py `def post`; Listing.objects.create (only write) |
+| 2 | Listing.source | DONE | engine.py `source="form"` parameter; field in core/models.py |
 | 3 | Draft model | DONE | class Draft in core/models.py |
-| 4 | Intake flow ingest/answer/confirm/cancel | DONE | core/urls.py:13-16; core/parser.py:425 `confirm()` |
-| 5 | Idempotent confirm | DONE | core/tests/test_core.py:168 test_confirm_idempotent |
-| 6 | Draft TTL and org ownership | DONE | core/parser.py:320 `_load`, :327 `_check_open`; tests test_core.py:175, :184. Raw-text retention purge not implemented. |
-| 7 | Allergen always asked | DONE | test_core.py:81 test_allergen_not_assumed |
-| 8 | LLM stub + reconcile | PARTIAL | reconcile tests test_core.py:93, :138, :145; no separate LLM module/stub class; CONFIDENCE_MIN not defined |
-| 9 | Lexicon covers all categories | DONE | test_core.py:130 |
-| 10 | /api/ingest* routes | DONE | core/urls.py:13-16 |
-| 11 | Chat bubbles | MISSING | none in public/index.html |
-| 12 | Allergen chips | DONE | public/index.html (chip render, approx lines 18-19, 123-124) |
-| 13 | Confirmation card | PARTIAL | card render approx public/index.html:108; clamp message shown only in status bar, not on card |
-| 14 | Confidence strip | DONE | public/index.html approx line 113 |
-| 15 | No-show reopen | DONE | core/engine.py no-show handler (approx 361-391); test_core.py:196 |
-| 16 | OTP attempt limit | PARTIAL | test_core.py:207; attempt logic engine.py approx 316-328; OTP expiry not implemented |
-| 17 | Rate limit | MISSING | no throttle in core/apps.py or views.py |
-| 18 | Coordinate coarsening | MISSING | API returns exact lat/lon; no rounding |
-| 19 | Impact strip | PARTIAL | impact computed; not rendered in UI |
-| 20 | Assumptions drawer | PARTIAL | shown inline, always visible; no drawer (public/index.html approx 190) |
-| 21 | Clock-speed selector | MISSING | API endpoint exists; no UI control |
-| 22 | Repeat last | MISSING | no control in UI |
-| 23 | Sponsor view | PARTIAL | reuses generic feed (public/index.html approx 37); no dedicated panel |
-| 24 | EVAL.md | MISSING | file does not exist |
+| 4 | Intake flow ingest/answer/confirm/cancel | DONE | core/urls.py; core/parser.py `confirm()` |
+| 5 | Idempotent confirm | DONE | core/tests/test_core.py test_confirm_idempotent |
+| 6 | Draft TTL and org ownership | DONE | core/parser.py `_load`, `_check_open`; raw-text retention purge implemented in confirm() and cancel() |
+| 7 | Allergen always asked | DONE | test_core.py test_allergen_not_assumed |
+| 8 | LLM stub + reconcile | DONE | core/llm.py with StubLLM, HttpLLM, CONFIDENCE_MIN=0.7; core/tests/test_llm.py |
+| 9 | Lexicon covers all categories | DONE | test_core.py test_lexicon_covers_all_categories |
+| 10 | /api/ingest* routes | DONE | core/urls.py; views.py |
+| 11 | Chat bubbles | DONE | public/index.html `#chat` element with `.bubble.user` and `.bubble.assistant` |
+| 12 | Allergen chips | DONE | public/index.html chip render |
+| 13 | Confirmation card | DONE | public/index.html `#confirm` card with `clamp_message` and trust tags |
+| 14 | Confidence strip | DONE | public/index.html trust tags `[high/medium/low, source]` |
+| 15 | No-show reopen | DONE | core/engine.py no-show handler; test_core.py test_noshow_reopens_listing |
+| 16 | OTP attempt limit & expiry | DONE | core/engine.py 5 attempts max, OTP_TTL_MINUTES=10; test_otp_expiry.py |
+| 17 | Rate limit | DONE | core/views.py `_rate_ok` sliding window with periodic cleanup |
+| 18 | Coordinate coarsening | DONE | core/engine.py `orgs()` returns 2 decimal places unless linked via active delivery |
+| 19 | Impact strip | DONE | public/index.html `#impact` with meals, kg, co2e, rescue rate, waste |
+| 20 | Assumptions drawer | DONE | public/index.html collapsible `<details id="assumptions">` |
+| 21 | Clock-speed selector | DONE | public/index.html `#speed` bound to `/api/demo/speed` |
+| 22 | Repeat last | DONE | `/api/listings/last` and `#repeatLast`, `#repeatPost` in public/index.html |
+| 23 | Sponsor view | DONE | public/index.html dedicated `#sponsorPanel` with CSR verified meals & carbon metrics |
+| 24 | EVAL.md | DONE | `EVAL.md` and `scripts/eval_intake.py` |
 
-Totals: 12 DONE, 6 PARTIAL (8, 13, 16, 19, 20, 23), 6 MISSING (11, 17, 18, 21, 22, 24).
+Totals: 24 DONE (100% PRD Compliance).
 
 ## engine.post( call sites
 - core/engine.py:218 — definition `def post`

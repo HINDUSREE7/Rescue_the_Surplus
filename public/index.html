@@ -1399,6 +1399,159 @@
     .nav-controls { width: 100%; justify-content: space-between; }
     .impact-metric-card { min-width: 140px; }
     .slider-controls { grid-template-columns: 1fr; }
+    .form-row { grid-template-columns: 1fr !important; }
+    #chat:not(:empty) { min-height: 80px; }
+    #map { min-height: 280px; }
+  }
+
+  /* URGENCY PULSING BORDER */
+  @keyframes urgentPulse {
+    0%, 100% { border-color: rgba(220, 38, 38, 0.4); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.3); }
+    50% { border-color: rgba(220, 38, 38, 0.9); box-shadow: 0 0 12px 2px rgba(220, 38, 38, 0.2); }
+  }
+  .card-urgent {
+    animation: urgentPulse 1.5s ease-in-out infinite;
+    border-color: var(--urgent) !important;
+  }
+
+  /* SOURCE BADGE */
+  .source-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 7px;
+    border-radius: var(--radius-full);
+    background: var(--slate-100);
+    color: var(--slate-600);
+    border: 1px solid var(--slate-200);
+  }
+  .source-badge.source-chat { background: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+  .source-badge.source-voice { background: #fce7f3; color: #9d174d; border-color: #fbcfe8; }
+  .source-badge.source-form { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+
+  /* REFRESH INDICATOR */
+  .refresh-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11.5px;
+    color: var(--slate-500);
+  }
+  .refresh-row button {
+    background: none;
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-sm);
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--slate-600);
+    cursor: pointer;
+    font-family: inherit;
+    transition: var(--transition);
+  }
+  .refresh-row button:hover {
+    background: var(--primary-bg);
+    border-color: var(--primary);
+    color: var(--primary-dark);
+  }
+
+  /* LOADING SPINNER */
+  .api-spinner {
+    display: none;
+    width: 16px;
+    height: 16px;
+    border: 2.5px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .api-spinner.active { display: inline-block; }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* CONNECTION STATUS */
+  .conn-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: var(--radius-full);
+    transition: var(--transition);
+  }
+  .conn-status.connected { color: #a7f3d0; background: rgba(16, 185, 129, 0.2); }
+  .conn-status.disconnected { color: #fecaca; background: rgba(220, 38, 38, 0.3); border: 1px solid rgba(239, 68, 68, 0.4); }
+
+  /* HELP MODAL */
+  .help-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    flex-shrink: 0;
+  }
+  .help-btn:hover { background: rgba(255,255,255,0.25); transform: scale(1.1); }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal-box {
+    background: #fff;
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    max-width: 520px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    max-height: 85vh;
+    overflow-y: auto;
+    animation: cardPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .modal-box h3 { font-size: 18px; font-weight: 800; color: var(--slate-900); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .modal-box ol { padding-left: 22px; display: flex; flex-direction: column; gap: 10px; }
+  .modal-box li { font-size: 13.5px; color: var(--slate-700); line-height: 1.6; }
+  .modal-box li b { color: var(--primary-dark); }
+  .modal-close { float: right; background: none; border: none; font-size: 20px; cursor: pointer; color: var(--slate-500); }
+  .modal-close:hover { color: var(--slate-900); }
+
+  /* SPONSOR PANEL ENHANCED */
+  #sponsorPanel.sponsor-themed {
+    background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+    border: 1.5px solid rgba(124, 58, 237, 0.3);
+  }
+  #sponsorPanel.sponsor-themed .section-title { color: var(--sponsor-color); }
+  .metric-card-sponsor::before { background: var(--sponsor-color); }
+  .metric-card-water::before { background: #0ea5e9; }
+
+  /* SPEED ACTIVE INDICATOR */
+  .speed-active {
+    color: #fbbf24 !important;
+    border-color: rgba(251, 191, 36, 0.5) !important;
   }
 </style>
 </head>
@@ -1934,7 +2087,12 @@ async function api(method, path, body) {
     opts.headers["Content-Type"] = "application/json";
     opts.body = JSON.stringify(body);
   }
-  const r = await fetch(path, opts);
+  let r;
+  try {
+    r = await fetch(path, opts);
+  } catch (err) {
+    throw new Error("Network request failed: " + (err.message || "server unreachable"));
+  }
   let data = {};
   try { data = await r.json(); } catch (e) { data = {error: "bad response"}; }
   if (!r.ok) throw new Error(data.error || ("HTTP " + r.status));
@@ -2097,6 +2255,30 @@ async function loadMeta() {
   try {
     meta = await api("GET", "/api/meta");
     buildAllergenBoxes(meta.allergens || []);
+    const orgs = await api("GET", "/api/orgs").catch(() => null);
+    if (orgs && orgs.length) {
+      orgList = orgs;
+      const sel = $("role");
+      const cur = sel.value;
+      sel.innerHTML = "";
+      const roles = ["donor", "receiver", "volunteer", "sponsor"];
+      roles.forEach((rk) => {
+        const grp = orgs.filter((o) => o.role === rk);
+        if (!grp.length) return;
+        const optgrp = document.createElement("optgroup");
+        optgrp.label = (ROLE_LABEL[rk] || cap(rk)) + "s";
+        grp.forEach((o) => {
+          const opt = document.createElement("option");
+          opt.value = o.id;
+          opt.textContent = `${ROLE_LABEL[o.role] || cap(o.role)}: ${o.name}`;
+          if (String(o.id) === String(cur)) opt.selected = true;
+          optgrp.appendChild(opt);
+        });
+        sel.appendChild(optgrp);
+      });
+      if (!sel.value && sel.options.length) sel.selectedIndex = 0;
+      applyRole();
+    }
   } catch (e) {
     $("formAllergens").textContent = "";
     setStatus(e.message, true);
@@ -2260,15 +2442,18 @@ function offerHtml(o) {
 // Actions by Role
 function actions(l) {
   const r = $("role").value;
+  const currentOrg = (orgList || []).find((o) => String(o.id) === r);
+  const isReceiver = currentOrg ? currentOrg.role === "receiver" : RECEIVER_IDS.includes(r);
+  const isVolunteer = currentOrg ? currentOrg.role === "volunteer" : VOLUNTEER_IDS.includes(r);
   const out = [];
-  if (RECEIVER_IDS.includes(r) && l.status === "posted" &&
+  if (isReceiver && l.status === "posted" &&
       (l.offers || []).some((o) => String(o.receiver_id) === r && o.status === "pending")) {
     out.push(`<div class="action-buttons-row">
       <button class="btn btn-primary" data-act="claim" data-id="${esc(l.id)}">✓ Claim Food Offer</button>
       <button class="btn btn-outline" style="color:var(--slate-700);border-color:var(--slate-300)" data-act="decline" data-id="${esc(l.id)}">✕ Decline</button>
     </div>`);
   }
-  if (VOLUNTEER_IDS.includes(r) && (l.status === "claimed" || l.status === "collected")) {
+  if (isVolunteer && (l.status === "claimed" || l.status === "collected")) {
     const isPickup = l.status === "claimed";
     out.push(`<div class="action-buttons-row">
       <div class="otp-input-group">
